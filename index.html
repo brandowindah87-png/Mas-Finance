@@ -31,8 +31,18 @@
         <div class="balance-foot"><span>● Data tersimpan di perangkat</span><span id="txCount">0 transaksi</span></div>
       </article>
       <div class="stats">
-        <article class="stat-card"><div class="stat-icon income">↙</div><p>Pemasukan</p><strong id="income">Rp0</strong></article>
-        <article class="stat-card"><div class="stat-icon expense">↗</div><p>Pengeluaran</p><strong id="expense">Rp0</strong></article>
+        <article class="stat-card mf-clickable mf-stat-trigger" onclick="bukaGrafikTransaksi('income')">
+          <div class="stat-icon income">↙</div>
+          <p>Pemasukan</p>
+          <strong id="income">Rp0</strong>
+          <span class="mf-chart-hint">Grafik ▸</span>
+        </article>
+        <article class="stat-card mf-clickable mf-stat-trigger" onclick="bukaGrafikTransaksi('expense')">
+          <div class="stat-icon expense">↗</div>
+          <p>Pengeluaran</p>
+          <strong id="expense">Rp0</strong>
+          <span class="mf-chart-hint">Grafik ▸</span>
+        </article>
       </div>
       <div class="section-head compact"><h2>Menu cepat</h2></div>
       <div class="quick-grid">
@@ -113,7 +123,7 @@
         <div class="divider"></div>
         <h3>Catatan penyimpanan</h3><p>Data tersimpan pada browser di perangkat ini. Menghapus data situs/browser dapat menghapus transaksi. Lakukan backup secara berkala.</p>
       </article>
-      <p class="version">MAS FINANCE · Versi 0.2.0</p>
+      <p class="version">MAS FINANCE · Versi 0.2.1</p>
     </section>
   </main>
 
@@ -125,9 +135,12 @@
     <button class="nav-item" data-page="settings"><span>⚙</span>Data</button>
   </nav>
 
-  <dialog id="txDialog">
+  <dialog id="txDialog" onclick="tutupDialogBackdrop(event)">
     <form method="dialog" id="txForm">
-      <div class="dialog-head"><h2>Transaksi baru</h2><button class="close-btn" value="cancel" aria-label="Tutup">×</button></div>
+      <div class="dialog-head">
+        <h2>Transaksi baru</h2>
+        <button type="button" formnovalidate class="close-btn" aria-label="Tutup" onclick="tutupTxDialog()">×</button>
+      </div>
       <div class="type-switch">
         <button type="button" class="type-choice selected" data-type="income">Pemasukan</button>
         <button type="button" class="type-choice" data-type="expense">Pengeluaran</button>
@@ -148,9 +161,30 @@
   </dialog>
   <div id="toast" class="toast" role="status"></div>
 
-  <!-- POP-UP MODAL FITUR BUDGET -->
+  <!-- POP-UP MODAL GRAFIK & FITUR BUDGET -->
   <div id="mf-modal-overlay" class="mf-overlay" onclick="tutupSemuaModal(event)">
     
+    <!-- 0. Modal Grafik Pemasukan & Pengeluaran -->
+    <div id="modal-grafik" class="mf-modal-box">
+      <div class="mf-modal-header">
+        <h2 id="judul-modal-grafik">Grafik Pengeluaran</h2>
+        <button type="button" class="mf-btn-close" onclick="tutupModalLangsung()">✕</button>
+      </div>
+      <div class="mf-modal-body">
+        <div class="mf-seg-group">
+          <button type="button" id="tab-grafik-expense" class="mf-seg-btn active-expense" onclick="ubahTipeGrafik('expense')">Pengeluaran</button>
+          <button type="button" id="tab-grafik-income" class="mf-seg-btn" onclick="ubahTipeGrafik('income')">Pemasukan</button>
+        </div>
+
+        <div class="mf-seg-group" style="margin-top: 8px;">
+          <button type="button" id="period-grafik-month" class="mf-seg-btn active-neutral" onclick="ubahPeriodeGrafik('month')">Bulan Ini</button>
+          <button type="button" id="period-grafik-all" class="mf-seg-btn" onclick="ubahPeriodeGrafik('all')">Semua Waktu</button>
+        </div>
+
+        <div id="konten-grafik-area"></div>
+      </div>
+    </div>
+
     <!-- 1. Modal Alokasi Gaji -->
     <div id="modal-gaji" class="mf-modal-box">
       <div class="mf-modal-header">
@@ -279,6 +313,19 @@
       transform: scale(0.98);
       border-color: #38bdf8;
     }
+    .mf-stat-trigger {
+      position: relative;
+    }
+    .mf-chart-hint {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-size: 11px;
+      color: #94a3b8;
+      background: rgba(30, 41, 59, 0.85);
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
     .mf-overlay {
       display: none;
       position: fixed;
@@ -295,7 +342,7 @@
       display: none;
       width: 100%;
       max-width: 480px;
-      max-height: 85vh;
+      max-height: 86vh;
       background: #111827;
       border-top: 1px solid #283548;
       border-radius: 20px 20px 0 0;
@@ -328,6 +375,71 @@
       border-radius: 50%;
       font-size: 16px;
       cursor: pointer;
+    }
+    .mf-seg-group {
+      display: flex;
+      gap: 6px;
+      background: #0f172a;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+    }
+    .mf-seg-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .mf-seg-btn.active-expense {
+      background: rgba(248, 113, 113, 0.2);
+      color: #f87171;
+    }
+    .mf-seg-btn.active-income {
+      background: rgba(74, 222, 128, 0.2);
+      color: #4ade80;
+    }
+    .mf-seg-btn.active-neutral {
+      background: #1e293b;
+      color: #38bdf8;
+    }
+    .mf-donut-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 14px 0;
+    }
+    .mf-trend-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 90px;
+      padding-top: 12px;
+      border-bottom: 1px solid #243044;
+    }
+    .mf-trend-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .mf-trend-bar {
+      width: 100%;
+      max-width: 24px;
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.25s ease;
+    }
+    .mf-trend-lbl {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 4px;
     }
     .mf-label {
       display: block;
@@ -426,6 +538,216 @@
 
   <script src="./app.js"></script>
   <script>
+    // --- FIX TOMBOL CLOSE DIALOG TRANSAKSI ---
+    function tutupTxDialog() {
+      const dlg = document.getElementById('txDialog');
+      if (!dlg) return;
+      if (typeof dlg.close === 'function') {
+        dlg.close();
+      } else {
+        dlg.removeAttribute('open');
+      }
+    }
+
+    function tutupDialogBackdrop(e) {
+      if (e.target && e.target.id === 'txDialog') {
+        tutupTxDialog();
+      }
+    }
+
+    // --- FITUR GRAFIK PEMASUKAN & PENGELUARAN ---
+    let grafikTipeAktif = 'expense';
+    let grafikPeriodeAktif = 'month';
+    const WARNA_GRAFIK = ['#38bdf8', '#4ade80', '#f87171', '#fbbf24', '#a78bfa', '#fb923c', '#2dd4bf', '#f472b6', '#94a3b8'];
+
+    function normalisasiTanggal(tglStr) {
+      if (!tglStr) return '';
+      if (/^\d{4}-\d{2}-\d{2}/.test(tglStr)) return tglStr.slice(0, 10);
+      const m = tglStr.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      return tglStr;
+    }
+
+    function ambilSemuaTransaksi() {
+      let hasil = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || key === 'masfinance_budget_v1') continue;
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          let list = null;
+          if (Array.isArray(parsed)) {
+            list = parsed;
+          } else if (parsed && typeof parsed === 'object') {
+            for (const val of Object.values(parsed)) {
+              if (Array.isArray(val) && val.length > 0 && val[0] && ('amount' in val[0] || 'nominal' in val[0])) {
+                list = val;
+                break;
+              }
+            }
+          }
+          if (list && list.length > 0 && list[0] && ('amount' in list[0] || 'nominal' in list[0])) {
+            hasil = list.map(item => ({
+              type: item.type || item.jenis || 'expense',
+              amount: Number(item.amount ?? item.nominal ?? 0),
+              category: item.category || item.kategori || 'Lainnya',
+              date: normalisasiTanggal(item.date || item.tanggal || '')
+            }));
+            break;
+          }
+        } catch (err) {}
+      }
+      return hasil;
+    }
+
+    function bukaGrafikTransaksi(tipe) {
+      grafikTipeAktif = tipe || 'expense';
+      document.getElementById('mf-modal-overlay').classList.add('active');
+      document.querySelectorAll('.mf-modal-box').forEach(el => el.classList.remove('active'));
+      document.getElementById('modal-grafik').classList.add('active');
+      renderGrafikTransaksi();
+    }
+
+    function ubahTipeGrafik(tipe) {
+      grafikTipeAktif = tipe;
+      renderGrafikTransaksi();
+    }
+
+    function ubahPeriodeGrafik(periode) {
+      grafikPeriodeAktif = periode;
+      renderGrafikTransaksi();
+    }
+
+    function bukaFormTransaksiDariGrafik() {
+      tutupModalLangsung();
+      const addBtn = document.getElementById('addBtn');
+      if (addBtn) addBtn.click();
+      const choice = document.querySelector(`.type-choice[data-type="${grafikTipeAktif}"]`);
+      if (choice) choice.click();
+    }
+
+    function renderGrafikTransaksi() {
+      const isExpense = grafikTipeAktif === 'expense';
+      const warnaUtama = isExpense ? '#f87171' : '#4ade80';
+      document.getElementById('judul-modal-grafik').textContent = isExpense ? 'Grafik Pengeluaran' : 'Grafik Pemasukan';
+      document.getElementById('judul-modal-grafik').style.color = warnaUtama;
+
+      const btnExp = document.getElementById('tab-grafik-expense');
+      const btnInc = document.getElementById('tab-grafik-income');
+      btnExp.className = 'mf-seg-btn' + (isExpense ? ' active-expense' : '');
+      btnInc.className = 'mf-seg-btn' + (!isExpense ? ' active-income' : '');
+
+      const btnMonth = document.getElementById('period-grafik-month');
+      const btnAll = document.getElementById('period-grafik-all');
+      btnMonth.className = 'mf-seg-btn' + (grafikPeriodeAktif === 'month' ? ' active-neutral' : '');
+      btnAll.className = 'mf-seg-btn' + (grafikPeriodeAktif === 'all' ? ' active-neutral' : '');
+
+      const now = new Date();
+      const bulanIni = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      const semua = ambilSemuaTransaksi().filter(tx => {
+        if (tx.type !== grafikTipeAktif) return false;
+        if (grafikPeriodeAktif === 'month' && tx.date) {
+          return tx.date.startsWith(bulanIni);
+        }
+        return true;
+      });
+
+      const wadah = document.getElementById('konten-grafik-area');
+      if (semua.length === 0) {
+        wadah.innerHTML = `
+          <div class="mf-stat-box" style="text-align:center; padding: 24px 16px;">
+            <p class="mf-muted" style="margin: 0 0 12px 0;">Belum ada data ${isExpense ? 'pengeluaran' : 'pemasukan'} pada periode ini.</p>
+            <button type="button" class="mf-btn-primary" style="padding: 10px 16px;" onclick="bukaFormTransaksiDariGrafik()">＋ Tambah ${isExpense ? 'Pengeluaran' : 'Pemasukan'}</button>
+          </div>`;
+        return;
+      }
+
+      const totalNominal = semua.reduce((sum, tx) => sum + tx.amount, 0);
+      const perKategori = {};
+      const perTanggal = {};
+
+      semua.forEach(tx => {
+        perKategori[tx.category] = (perKategori[tx.category] || 0) + tx.amount;
+        const tglKey = tx.date ? (grafikPeriodeAktif === 'month' ? tx.date.slice(8, 10) : tx.date.slice(0, 7)) : '-';
+        perTanggal[tglKey] = (perTanggal[tglKey] || 0) + tx.amount;
+      });
+
+      const daftarKategori = Object.entries(perKategori)
+        .map(([nama, nilai]) => ({ nama, nilai }))
+        .sort((a, b) => b.nilai - a.nilai);
+
+      // Buat segmen SVG Donut Chart
+      const radius = 54;
+      const keliling = 2 * Math.PI * radius;
+      let offsetAkumulasi = 0;
+      let svgSegmen = '';
+
+      daftarKategori.forEach((kat, i) => {
+        const porsi = kat.nilai / totalNominal;
+        const panjangDash = porsi * keliling;
+        const warna = WARNA_GRAFIK[i % WARNA_GRAFIK.length];
+        svgSegmen += `<circle cx="70" cy="70" r="${radius}" fill="transparent" stroke="${warna}" stroke-width="18" stroke-dasharray="${panjangDash} ${keliling}" stroke-dashoffset="${-offsetAkumulasi}" transform="rotate(-90 70 70)"></circle>`;
+        offsetAkumulasi += panjangDash;
+      });
+
+      // Buat grafik batang tren tanggal/bulan (maksimal 7 titik terakhir)
+      const daftarTren = Object.entries(perTanggal).sort((a, b) => a[0].localeCompare(b[0])).slice(-7);
+      const maksTren = Math.max(...daftarTren.map(d => d[1]), 1);
+      const htmlTren = daftarTren.map(([lbl, val]) => {
+        const tinggiPersen = Math.max(8, Math.round((val / maksTren) * 100));
+        return `
+          <div class="mf-trend-col">
+            <div class="mf-trend-bar" style="height:${tinggiPersen}%; background:${warnaUtama};"></div>
+            <span class="mf-trend-lbl">${lbl}</span>
+          </div>`;
+      }).join('');
+
+      // Buat rincian kategori
+      const htmlKategori = daftarKategori.map((kat, i) => {
+        const persen = Math.round((kat.nilai / totalNominal) * 100);
+        const warna = WARNA_GRAFIK[i % WARNA_GRAFIK.length];
+        return `
+          <div class="mf-item-row">
+            <div class="mf-row-between">
+              <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${warna};margin-right:6px;"></span><strong>${kat.nama}</strong></span>
+              <span><strong>${formatRp(kat.nilai)}</strong> <span class="mf-muted">(${persen}%)</span></span>
+            </div>
+            <div class="mf-progress-bg" style="margin:6px 0 0 0; height:6px;">
+              <div class="mf-progress-fill" style="width:${persen}%; background:${warna};"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      wadah.innerHTML = `
+        <div class="mf-stat-box">
+          <div class="mf-row-between">
+            <span class="mf-muted">Total ${isExpense ? 'Pengeluaran' : 'Pemasukan'}</span>
+            <span class="mf-badge">${semua.length} transaksi</span>
+          </div>
+          <h3 style="margin: 4px 0 0 0; font-size: 20px; color: ${warnaUtama};">${formatRp(totalNominal)}</h3>
+
+          <div class="mf-donut-wrap">
+            <svg width="140" height="140" viewBox="0 0 140 140">
+              <circle cx="70" cy="70" r="${radius}" fill="transparent" stroke="#1e293b" stroke-width="18"></circle>
+              ${svgSegmen}
+              <text x="70" y="67" text-anchor="middle" fill="#94a3b8" font-size="10">Kategori</text>
+              <text x="70" y="83" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="bold">${daftarKategori.length}</text>
+            </svg>
+          </div>
+        </div>
+
+        <h4 class="mf-section-title">Tren ${grafikPeriodeAktif === 'month' ? 'Harian (Tanggal)' : 'Bulanan'}</h4>
+        <div class="mf-stat-box" style="margin-top: 6px;">
+          <div class="mf-trend-bars">${htmlTren}</div>
+        </div>
+
+        <h4 class="mf-section-title">Proporsi per Kategori</h4>
+        ${htmlKategori}
+      `;
+    }
+
+    // --- FITUR BUDGET & BACKUP ---
     const STORAGE_BUDGET_KEY = 'masfinance_budget_v1';
 
     let budgetData = JSON.parse(localStorage.getItem(STORAGE_BUDGET_KEY)) || {
@@ -677,7 +999,6 @@
       document.getElementById('lbl-net-worth').textContent = formatRp(totalAset - totalUtang);
     }
 
-    // UPDATE RINGKASAN KARTU DI TAB BUDGET
     function updateRingkasanKartu() {
       if (budgetData.gaji.nominal > 0) {
         document.getElementById('sub-gaji').textContent = `Gaji aktif: ${formatRp(budgetData.gaji.nominal)} (${budgetData.gaji.pos.length} pos)`;
@@ -752,7 +1073,6 @@
       reader.readAsText(file);
     }
 
-    // Hubungkan tombol cepat "Tabungan" di Home agar langsung membuka modal Target Tabungan
     document.querySelectorAll('[data-open="goals"]').forEach(btn => {
       btn.addEventListener('click', () => bukaModalBudget('modal-tabungan'));
     });
