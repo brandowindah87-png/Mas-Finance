@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101720">
+  <meta name="description" content="Pencatat keuangan pribadi offline-first.">
+  <title>MAS FINANCE</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand">MAS <span>FINANCE</span></div>
+      <div class="subbrand">PERSONAL MONEY TRACKER</div>
+    </div>
+    <button class="icon-btn" id="installBtn" hidden aria-label="Pasang aplikasi">⇩</button>
+  </header>
+
+  <main>
+    <section id="page-home" class="page active">
+      <div class="section-head">
+        <div><p class="eyebrow">RINGKASAN BULAN INI</p><h1>Keuanganmu</h1></div>
+        <span class="month-pill" id="monthLabel"></span>
+      </div>
+      <article class="balance-card">
+        <p class="muted">Saldo bersih bulan ini</p>
+        <h2 id="balance">Rp0</h2>
+        <div class="balance-foot"><span>● Data tersimpan di perangkat</span><span id="txCount">0 transaksi</span></div>
+      </article>
+      <div class="stats">
+        <article class="stat-card"><div class="stat-icon income">↙</div><p>Pemasukan</p><strong id="income">Rp0</strong></article>
+        <article class="stat-card"><div class="stat-icon expense">↗</div><p>Pengeluaran</p><strong id="expense">Rp0</strong></article>
+      </div>
+      <div class="section-head compact"><h2>Menu cepat</h2></div>
+      <div class="quick-grid">
+        <button class="quick" data-open="transactions"><span>＋</span>Transaksi</button>
+        <button class="quick" data-open="budget"><span>▤</span>Budget</button>
+        <button class="quick" data-open="goals"><span>◎</span>Tabungan</button>
+        <button class="quick" data-open="assistant"><span>✧</span>AI Assistant</button>
+      </div>
+      <div class="section-head compact"><h2>Transaksi terakhir</h2><button class="text-btn" data-open="transactions">Lihat semua</button></div>
+      <div id="recentList" class="transaction-list"></div>
+    </section>
+
+    <section id="page-transactions" class="page">
+      <div class="section-head"><div><p class="eyebrow">CATATAN HARIAN</p><h1>Transaksi</h1></div></div>
+      <button class="primary-btn full" id="addBtn">＋ Tambah transaksi</button>
+      <div class="filter-row">
+        <button class="filter active" data-filter="all">Semua</button>
+        <button class="filter" data-filter="income">Masuk</button>
+        <button class="filter" data-filter="expense">Keluar</button>
+      </div>
+      <div id="allList" class="transaction-list"></div>
+    </section>
+
+    <section id="page-budget" class="page">
+      <div class="section-head"><div><p class="eyebrow">ATUR UANGMU</p><h1>Budget</h1></div></div>
+      <article class="info-card">
+        <div class="info-icon">◷</div><div><h3>Alokasi gaji</h3><p>Fitur pembagian gaji otomatis akan hadir di versi berikutnya.</p></div>
+      </article>
+      <article class="info-card">
+        <div class="info-icon">♧</div><div><h3>Dana darurat</h3><p>Tentukan target dana darurat dan pantau progresnya nanti.</p></div>
+      </article>
+      <article class="info-card">
+        <div class="info-icon">◎</div><div><h3>Target tabungan</h3><p>Rencanakan tujuan keuangan tanpa mencampur saldo aktual.</p></div>
+      </article>
+      <article class="info-card">
+        <div class="info-icon">▥</div><div><h3>Aset dan cicilan</h3><p>Pencatatan aset, investasi, utang, dan tagihan menyusul.</p></div>
+      </article>
+    </section>
+
+    <section id="page-assistant" class="page">
+      <div class="section-head"><div><p class="eyebrow">PENDAMPING KEUANGAN</p><h1>AI Assistant</h1></div></div>
+      <article class="assistant-card">
+        <div class="assistant-mark">✧</div>
+        <h2>MAS Finance Assistant</h2>
+        <p>Asisten analisis keuangan sedang disiapkan. Untuk saat ini, ringkasan saldo dan transaksi dihitung langsung oleh aplikasi.</p>
+        <p class="small-note">Data keuanganmu tidak dikirim ke layanan AI pada versi ini.</p>
+      </article>
+    </section>
+
+    <section id="page-settings" class="page">
+      <div class="section-head"><div><p class="eyebrow">DATA DAN PRIVASI</p><h1>Pengaturan</h1></div></div>
+      <article class="settings-card">
+        <h3>Backup data</h3><p>Ekspor transaksi menjadi file JSON. Simpan file di tempat aman.</p>
+        <button class="secondary-btn full" id="exportBtn">⇧ Ekspor backup</button>
+        <div class="divider"></div>
+        <h3>Pulihkan data</h3><p>Impor file backup MAS FINANCE dari perangkatmu.</p>
+        <label class="secondary-btn full file-label">＋ Pilih file backup<input type="file" id="importFile" accept="application/json"></label>
+        <div class="divider"></div>
+        <h3>Catatan penyimpanan</h3><p>Data tersimpan pada browser di perangkat ini. Menghapus data situs/browser dapat menghapus transaksi. Lakukan backup secara berkala.</p>
+      </article>
+      <p class="version">MAS FINANCE · Versi 0.1.0</p>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="home"><span>⌂</span>Home</button>
+    <button class="nav-item" data-page="transactions"><span>⇄</span>Transaksi</button>
+    <button class="nav-item" data-page="budget"><span>▤</span>Budget</button>
+    <button class="nav-item" data-page="assistant"><span>✧</span>AI</button>
+    <button class="nav-item" data-page="settings"><span>⚙</span>Data</button>
+  </nav>
+
+  <dialog id="txDialog">
+    <form method="dialog" id="txForm">
+      <div class="dialog-head"><h2>Transaksi baru</h2><button class="close-btn" value="cancel" aria-label="Tutup">×</button></div>
+      <div class="type-switch">
+        <button type="button" class="type-choice selected" data-type="income">Pemasukan</button>
+        <button type="button" class="type-choice" data-type="expense">Pengeluaran</button>
+      </div>
+      <input type="hidden" id="txType" value="income">
+      <label>Nominal (Rupiah)<input id="txAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="Contoh: 150000" required></label>
+      <label>Kategori
+        <select id="txCategory">
+          <option>Gaji</option><option>Penghasilan tambahan</option><option>Bonus</option>
+          <option>Makanan</option><option>Transportasi</option><option>Kebutuhan pribadi</option>
+          <option>Tagihan</option><option>Rokok</option><option>Lainnya</option>
+        </select>
+      </label>
+      <label>Keterangan<input id="txNote" maxlength="80" placeholder="Opsional"></label>
+      <label>Tanggal<input id="txDate" type="date" required></label>
+      <button class="primary-btn full submit-btn" type="submit">Simpan transaksi</button>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="./app.js"></script>
+</body>
+</html>

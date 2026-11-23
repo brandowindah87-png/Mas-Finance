@@ -1,0 +1,19 @@
+{
+  "name": "MAS FINANCE - Keuangan Pribadi",
+  "short_name": "MAS FINANCE",
+  "description": "Pencatat keuangan pribadi offline-first",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#101720",
+  "theme_color": "#101720",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
