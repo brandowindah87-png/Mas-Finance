@@ -1,0 +1,2009 @@
+<!doctype html>
+<html lang="id">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101720">
+  <meta name="description" content="Pencatat keuangan pribadi offline-first.">
+  <title>MAS FINANCE</title>
+  <link rel="manifest" href="./manifest.json">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div>
+      <div class="brand">MAS <span>FINANCE</span></div>
+      <div class="subbrand">PERSONAL MONEY TRACKER</div>
+    </div>
+    <button class="icon-btn" id="installBtn" hidden aria-label="Pasang aplikasi">⇩</button>
+  </header>
+
+  <main>
+    <section id="page-home" class="page active">
+      <div class="section-head">
+        <div><p class="eyebrow">RINGKASAN BULAN INI</p><h1>Keuanganmu</h1></div>
+        <span class="month-pill" id="monthLabel"></span>
+      </div>
+      <article class="balance-card">
+        <p class="muted">Saldo bersih bulan ini</p>
+        <h2 id="balance">Rp0</h2>
+        <div class="balance-foot"><span>● Data tersimpan di perangkat</span><span id="txCount">0 transaksi</span></div>
+      </article>
+      <div class="stats">
+        <article class="stat-card mf-clickable mf-stat-trigger" onclick="bukaGrafikTransaksi('income')">
+          <div class="stat-icon income">↙</div>
+          <p>Pemasukan</p>
+          <strong id="income">Rp0</strong>
+          <span class="mf-chart-hint">Grafik ▸</span>
+        </article>
+        <article class="stat-card mf-clickable mf-stat-trigger" onclick="bukaGrafikTransaksi('expense')">
+          <div class="stat-icon expense">↗</div>
+          <p>Pengeluaran</p>
+          <strong id="expense">Rp0</strong>
+          <span class="mf-chart-hint">Grafik ▸</span>
+        </article>
+      </div>
+      <div class="section-head compact"><h2>Menu cepat</h2></div>
+      <div class="quick-grid">
+        <button class="quick" data-open="transactions"><span>＋</span>Transaksi</button>
+        <button class="quick" data-open="jadwal"><span>▦</span>Masuk & Off</button>
+        <button class="quick" data-open="budget"><span>▤</span>Budget</button>
+        <button class="quick" data-open="goals"><span>◎</span>Tabungan</button>
+      </div>
+      <div class="section-head compact"><h2>Transaksi terakhir</h2><button class="text-btn" data-open="transactions">Lihat semua</button></div>
+      <div id="recentList" class="transaction-list"></div>
+    </section>
+
+    <section id="page-transactions" class="page">
+      <div class="section-head"><div><p class="eyebrow">CATATAN HARIAN</p><h1>Transaksi</h1></div></div>
+      <button class="primary-btn full" id="addBtn">＋ Tambah transaksi</button>
+      <div class="filter-row">
+        <button class="filter active" data-filter="all">Semua</button>
+        <button class="filter" data-filter="income">Masuk</button>
+        <button class="filter" data-filter="expense">Keluar</button>
+      </div>
+      <div class="mf-tx-toolbar">
+        <span class="mf-muted">Kelola catatan transaksi</span>
+        <button type="button" class="mf-link-danger" onclick="bukaModalReset('all')">↺ Reset transaksi</button>
+      </div>
+      <div id="allList" class="transaction-list"></div>
+    </section>
+
+    <!-- HALAMAN JADWAL TANGGAL MASUK, OFF & LEMBUR (1 HK = 9 JAM, 2-5J x2, >5J x3) -->
+    <section id="page-jadwal" class="page">
+      <div class="section-head">
+        <div><p class="eyebrow">ABSENSI & SHIFT (1 HK = 9 JAM)</p><h1>Masuk & Off</h1></div>
+        <button type="button" class="mf-link-neutral" onclick="keBulanIniJadwal()">Bulan Ini</button>
+      </div>
+
+      <!-- Ringkasan Rekap Bulan Terpilih -->
+      <div class="mf-jadwal-summary">
+        <div class="mf-jstat-card j-masuk">
+          <span class="mf-jstat-lbl">Hadir (HK)</span>
+          <strong id="j-count-hadir">0</strong>
+        </div>
+        <div class="mf-jstat-card j-off">
+          <span class="mf-jstat-lbl">Off</span>
+          <strong id="j-count-off">0</strong>
+        </div>
+        <div class="mf-jstat-card j-l3">
+          <span class="mf-jstat-lbl">Lembur 3J</span>
+          <strong id="j-count-l3">0</strong>
+        </div>
+        <div class="mf-jstat-card j-llain">
+          <span class="mf-jstat-lbl">Lembur Lain</span>
+          <strong id="j-count-llain">0</strong>
+        </div>
+      </div>
+
+      <!-- Navigasi Bulan Kalender -->
+      <div class="mf-cal-card">
+        <div class="mf-cal-nav">
+          <button type="button" class="mf-cal-arrow" onclick="geserBulanJadwal(-1)" aria-label="Bulan sebelumnya">‹</button>
+          <strong id="j-bulan-label">November 2026</strong>
+          <button type="button" class="mf-cal-arrow" onclick="geserBulanJadwal(1)" aria-label="Bulan berikutnya">›</button>
+        </div>
+
+        <!-- Keterangan Warna -->
+        <div class="mf-legend-row">
+          <span class="mf-leg-item"><i class="dot-masuk"></i>Masuk</span>
+          <span class="mf-leg-item"><i class="dot-off"></i>Off</span>
+          <span class="mf-leg-item"><i class="dot-l1"></i>1j→1j</span>
+          <span class="mf-leg-item"><i class="dot-l3"></i>3j→6j</span>
+          <span class="mf-leg-item"><i class="dot-l12"></i>12j→36j</span>
+          <span class="mf-leg-item"><i class="dot-lc"></i>Custom</span>
+        </div>
+
+        <!-- Header Nama Hari -->
+        <div class="mf-cal-weekdays">
+          <span>Sen</span><span>Sel</span><span>Rab</span><span>Kam</span><span>Jum</span><span>Sab</span><span style="color:#f87171;">Min</span>
+        </div>
+
+        <!-- Grid Tanggal -->
+        <div id="j-calendar-grid" class="mf-cal-grid"></div>
+      </div>
+
+      <!-- Box Rekap Perhitungan Lembur & HK (9 Jam) -->
+      <div class="mf-stat-box" style="margin-top: 12px;">
+        <div class="mf-row-between" style="margin-bottom: 6px; gap: 6px; flex-wrap: wrap;">
+          <span class="mf-muted">Skema hitungan</span>
+          <span class="mf-badge">2–5j ×2 · &gt;5j ×3 · 1 HK = 9j</span>
+        </div>
+        <div class="mf-row-between" style="margin-top: 8px;">
+          <span class="mf-muted">Hari hadir (Masuk + Hari Lembur)</span>
+          <strong id="j-detail-hadir" style="color: #4ade80; font-size: 13.5px;">0 hari (0 HK)</strong>
+        </div>
+        <div class="mf-row-between" style="margin-top: 6px;">
+          <span class="mf-muted">Jam lembur riil</span>
+          <strong id="j-total-jam-riil" style="color: #cbd5e1; font-size: 13.5px;">0 jam</strong>
+        </div>
+        <div class="mf-row-between" style="margin-top: 6px;">
+          <span class="mf-muted">Jam lembur terhitung</span>
+          <strong id="j-total-jam-lembur" style="color: #fb923c; font-size: 14px;">0 jam</strong>
+        </div>
+        <div class="mf-row-between" style="margin-top: 6px;">
+          <span class="mf-muted">Setara HK lembur (÷ 9 jam)</span>
+          <strong id="j-setara-hk-lembur" style="color: #fbbf24; font-size: 13.5px;">0 HK</strong>
+        </div>
+        <div class="mf-row-between" style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #243044;">
+          <span style="color: #e2e8f0; font-weight: 600; font-size: 13px;">Total HK (Hadir + Lembur)</span>
+          <strong id="j-total-hk-gabungan" style="color: #38bdf8; font-size: 15px;">0 HK</strong>
+        </div>
+        <div class="mf-row-between" style="margin-top: 10px; padding-top: 8px; border-top: 1px solid #243044;">
+          <span class="mf-muted">Ketuk tanggal untuk ubah</span>
+          <button type="button" class="mf-link-danger" onclick="resetJadwalBulanIni()">↺ Reset Bulan Ini</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="page-budget" class="page">
+      <div class="section-head"><div><p class="eyebrow">ATUR UANGMU</p><h1>Budget</h1></div></div>
+      <article class="info-card mf-clickable" onclick="bukaModalBudget('modal-gaji')">
+        <div class="info-icon">◷</div>
+        <div>
+          <h3>Alokasi gaji</h3>
+          <p id="sub-gaji">Atur pembagian gaji otomatis per kategori pos.</p>
+        </div>
+      </article>
+      <article class="info-card mf-clickable" onclick="bukaModalBudget('modal-darurat')">
+        <div class="info-icon">♧</div>
+        <div>
+          <h3>Dana darurat</h3>
+          <p id="sub-darurat">Tentukan target dana darurat dan pantau progresnya.</p>
+        </div>
+      </article>
+      <article class="info-card mf-clickable" onclick="bukaModalBudget('modal-tabungan')">
+        <div class="info-icon">◎</div>
+        <div>
+          <h3>Target tabungan</h3>
+          <p id="sub-tabungan">Rencanakan tujuan keuangan tanpa mencampur saldo aktual.</p>
+        </div>
+      </article>
+      <article class="info-card mf-clickable" onclick="bukaModalBudget('modal-aset')">
+        <div class="info-icon">▥</div>
+        <div>
+          <h3>Aset dan cicilan</h3>
+          <p id="sub-aset">Pencatatan aset, investasi, utang, dan tagihan.</p>
+        </div>
+      </article>
+    </section>
+
+    <section id="page-assistant" class="page">
+      <div class="section-head"><div><p class="eyebrow">PENDAMPING KEUANGAN</p><h1>AI Assistant</h1></div></div>
+      <article class="assistant-card">
+        <div class="assistant-mark">✧</div>
+        <h2>MAS Finance Assistant</h2>
+        <p>Asisten analisis keuangan sedang disiapkan. Untuk saat ini, ringkasan saldo dan transaksi dihitung langsung oleh aplikasi.</p>
+        <p class="small-note">Data keuanganmu tidak dikirim ke layanan AI pada versi ini.</p>
+      </article>
+    </section>
+
+    <section id="page-settings" class="page">
+      <div class="section-head"><div><p class="eyebrow">DATA DAN PRIVASI</p><h1>Pengaturan</h1></div></div>
+      <article class="settings-card">
+        <h3>Reset pengeluaran & pemasukan</h3>
+        <p>Kosongkan catatan pengeluaran saja, pemasukan saja, atau seluruh transaksi untuk memulai periode baru.</p>
+        <div class="mf-reset-grid">
+          <button class="mf-btn-outline-danger" type="button" onclick="bukaModalReset('expense')">↺ Reset Pengeluaran</button>
+          <button class="mf-btn-outline-success" type="button" onclick="bukaModalReset('income')">↺ Reset Pemasukan</button>
+        </div>
+        <button class="mf-btn-danger mf-full-btn" type="button" style="margin-top: 8px;" onclick="bukaModalReset('all')">🗑 Reset Semua (Masuk & Keluar)</button>
+        <div class="divider"></div>
+        <h3>Backup lengkap (Transaksi + Jadwal + Budget)</h3><p>Simpan seluruh data aplikasi sekaligus (transaksi, jadwal masuk/off, alokasi gaji, dana darurat, tabungan, aset & cicilan).</p>
+        <button class="secondary-btn full" type="button" onclick="backupSemuaDataApp()">⇧ Ekspor semua data</button>
+        <label class="secondary-btn full file-label" style="margin-top: 8px;">＋ Pulihkan semua data<input type="file" accept="application/json" onchange="restoreSemuaDataApp(event)"></label>
+        <div class="divider"></div>
+        <h3>Backup data transaksi</h3><p>Ekspor transaksi menjadi file JSON. Simpan file di tempat aman.</p>
+        <button class="secondary-btn full" id="exportBtn">⇧ Ekspor backup transaksi</button>
+        <div class="divider"></div>
+        <h3>Pulihkan data transaksi</h3><p>Impor file backup transaksi MAS FINANCE dari perangkatmu.</p>
+        <label class="secondary-btn full file-label">＋ Pilih file backup transaksi<input type="file" id="importFile" accept="application/json"></label>
+        <div class="divider"></div>
+        <h3>Catatan penyimpanan</h3><p>Data tersimpan pada browser di perangkat ini. Menghapus data situs/browser dapat menghapus transaksi. Lakukan backup secara berkala.</p>
+      </article>
+      <p class="version">MAS FINANCE · Versi 0.2.6</p>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="home"><span>⌂</span>Home</button>
+    <button class="nav-item" data-page="transactions"><span>⇄</span>Transaksi</button>
+    <button class="nav-item" data-page="jadwal"><span>▦</span>Jadwal</button>
+    <button class="nav-item" data-page="budget"><span>▤</span>Budget</button>
+    <button class="nav-item" data-page="assistant"><span>✧</span>AI</button>
+    <button class="nav-item" data-page="settings"><span>⚙</span>Data</button>
+  </nav>
+
+  <dialog id="txDialog" onclick="tutupDialogBackdrop(event)">
+    <form method="dialog" id="txForm">
+      <div class="dialog-head">
+        <h2>Transaksi baru</h2>
+        <button type="button" formnovalidate class="close-btn" aria-label="Tutup" onclick="tutupTxDialog()">×</button>
+      </div>
+      <div class="type-switch">
+        <button type="button" class="type-choice selected" data-type="income">Pemasukan</button>
+        <button type="button" class="type-choice" data-type="expense">Pengeluaran</button>
+      </div>
+      <input type="hidden" id="txType" value="income">
+      <label>Nominal (Rupiah)<input id="txAmount" type="number" min="1" step="1" inputmode="numeric" placeholder="Contoh: 150000" required></label>
+      <label>Kategori
+        <select id="txCategory">
+          <option>Gaji</option><option>Penghasilan tambahan</option><option>Bonus</option>
+          <option>Makanan</option><option>Transportasi</option><option>Kebutuhan pribadi</option>
+          <option>Tagihan</option><option>Rokok</option><option>Lainnya</option>
+        </select>
+      </label>
+      <label>Keterangan<input id="txNote" maxlength="80" placeholder="Opsional"></label>
+      <label>Tanggal<input id="txDate" type="date" required></label>
+      <button class="primary-btn full submit-btn" type="submit">Simpan transaksi</button>
+    </form>
+  </dialog>
+  <div id="toast" class="toast" role="status"></div>
+
+  <!-- POP-UP MODAL GRAFIK, JADWAL, RESET & FITUR BUDGET -->
+  <div id="mf-modal-overlay" class="mf-overlay" onclick="tutupSemuaModal(event)">
+    
+    <!-- Modal Pilihan Status Tanggal (Masuk, Off, Lembur 1j, 3j, 12j, Custom) -->
+    <div id="modal-jadwal-opsi" class="mf-modal-box">
+      <div class="mf-modal-header">
+        <div>
+          <h2 id="j-modal-tanggal" style="color: #38bdf8;">Tanggal</h2>
+          <span id="j-modal-status-sekarang" class="mf-muted">Belum ada status</span>
+        </div>
+        <button type="button" class="mf-btn-close" onclick="tutupModalLangsung()">✕</button>
+      </div>
+      <div class="mf-modal-body">
+        <label class="mf-label">Pilih Status (2–5j × 2 · &gt;5j × 3)</label>
+        <div class="mf-jopsi-grid">
+          <button type="button" id="opt-j-masuk" class="mf-jopsi-btn opt-masuk" onclick="pilihStatusTanggal('masuk')">
+            <span class="mf-jopsi-dot dot-masuk"></span>
+            <div class="mf-jopsi-text">
+              <strong>Masuk</strong>
+              <small>Hari kerja normal (1 HK / 9 jam)</small>
+            </div>
+            <span class="mf-jopsi-tag">HIJAU</span>
+          </button>
+
+          <button type="button" id="opt-j-off" class="mf-jopsi-btn opt-off" onclick="pilihStatusTanggal('off')">
+            <span class="mf-jopsi-dot dot-off"></span>
+            <div class="mf-jopsi-text">
+              <strong>Off</strong>
+              <small>Hari libur / tidak masuk</small>
+            </div>
+            <span class="mf-jopsi-tag">MERAH</span>
+          </button>
+
+          <button type="button" id="opt-j-l1" class="mf-jopsi-btn opt-l1" onclick="pilihStatusTanggal('lembur1')">
+            <span class="mf-jopsi-dot dot-l1"></span>
+            <div class="mf-jopsi-text">
+              <strong>Lembur 1 Jam</strong>
+              <small>1 jam × 1 = dihitung 1 jam</small>
+            </div>
+            <span class="mf-jopsi-tag">1 JAM</span>
+          </button>
+
+          <button type="button" id="opt-j-l3" class="mf-jopsi-btn opt-l3" onclick="pilihStatusTanggal('lembur3')">
+            <span class="mf-jopsi-dot dot-l3"></span>
+            <div class="mf-jopsi-text">
+              <strong>Lembur 3 Jam (Sering)</strong>
+              <small>3 jam × 2 = dihitung 6 jam</small>
+            </div>
+            <span class="mf-jopsi-tag">6 JAM</span>
+          </button>
+
+          <button type="button" id="opt-j-l12" class="mf-jopsi-btn opt-l12" onclick="pilihStatusTanggal('lembur12')">
+            <span class="mf-jopsi-dot dot-l12"></span>
+            <div class="mf-jopsi-text">
+              <strong>Lembur 12 Jam</strong>
+              <small>12 jam × 3 (&gt;5j) = dihitung 36 jam (4 HK)</small>
+            </div>
+            <span class="mf-jopsi-tag">36 JAM</span>
+          </button>
+        </div>
+
+        <!-- Input Jam Lembur Custom (2j, 4j, 5j, 6j, dll.) -->
+        <div class="mf-stat-box" style="margin-top: 12px; margin-bottom: 0; padding: 12px;">
+          <div class="mf-row-between">
+            <span class="mf-label" style="margin:0;">Lembur Jam Lain</span>
+            <span id="j-custom-preview" class="mf-badge">2 jam → 4 jam (×2)</span>
+          </div>
+          <div class="mf-quick-jam-row">
+            <button type="button" class="mf-chip-jam" onclick="pilihStatusCustomJam(2)">2j → 4j</button>
+            <button type="button" class="mf-chip-jam" onclick="pilihStatusCustomJam(4)">4j → 8j</button>
+            <button type="button" class="mf-chip-jam" onclick="pilihStatusCustomJam(5)">5j → 10j</button>
+            <button type="button" class="mf-chip-jam" onclick="pilihStatusCustomJam(6)">6j → 18j</button>
+          </div>
+          <div class="mf-add-row" style="margin-top: 8px;">
+            <input type="number" id="input-jam-custom" class="mf-input" min="1" max="24" step="0.5" placeholder="Ketik jam (misal: 6)" oninput="updatePreviewCustomJam()">
+            <button type="button" class="mf-btn-primary" onclick="simpanCustomJamInput()">Pakai</button>
+          </div>
+        </div>
+
+        <button type="button" id="btn-hapus-status-tgl" class="mf-btn-secondary mf-full-btn" style="margin-top: 12px; padding: 11px;" onclick="pilihStatusTanggal('')">
+          ✕ Hapus Status Tanggal Ini
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Konfirmasi Reset Pengeluaran & Pemasukan -->
+    <div id="modal-reset" class="mf-modal-box">
+      <div class="mf-modal-header">
+        <h2 style="color: #f87171;">Reset Transaksi</h2>
+        <button type="button" class="mf-btn-close" onclick="tutupModalLangsung()">✕</button>
+      </div>
+      <div class="mf-modal-body">
+        <label class="mf-label">Pilih Jenis Data yang Direset</label>
+        <div class="mf-seg-group">
+          <button type="button" id="rst-type-expense" class="mf-seg-btn" onclick="ubahTargetReset('expense')">Pengeluaran</button>
+          <button type="button" id="rst-type-income" class="mf-seg-btn" onclick="ubahTargetReset('income')">Pemasukan</button>
+          <button type="button" id="rst-type-all" class="mf-seg-btn" onclick="ubahTargetReset('all')">Semua</button>
+        </div>
+
+        <label class="mf-label" style="margin-top: 12px;">Rentang Waktu</label>
+        <div class="mf-seg-group">
+          <button type="button" id="rst-period-all" class="mf-seg-btn" onclick="ubahPeriodeReset('all')">Semua Waktu</button>
+          <button type="button" id="rst-period-month" class="mf-seg-btn" onclick="ubahPeriodeReset('month')">Bulan Ini Saja</button>
+        </div>
+
+        <div class="mf-stat-box" style="border-color: rgba(248, 113, 113, 0.35);">
+          <div class="mf-row-between">
+            <span class="mf-muted">Data yang akan dihapus</span>
+            <span id="rst-badge-count" class="mf-badge" style="color: #f87171;">0 transaksi</span>
+          </div>
+          <h3 id="rst-total-amount" style="margin: 6px 0; font-size: 20px; color: #f8fafc;">Rp0</h3>
+          <p id="rst-warning-text" class="mf-muted" style="margin: 0; line-height: 1.45;">
+            Tindakan ini menghapus catatan transaksi secara permanen dari perangkat. Data Jadwal & Budget tidak ikut terhapus.
+          </p>
+        </div>
+
+        <div class="mf-add-row" style="margin-top: 14px;">
+          <button type="button" class="mf-btn-secondary" style="flex: 1; padding: 12px;" onclick="tutupModalLangsung()">Batal</button>
+          <button type="button" id="btn-eksekusi-reset" class="mf-btn-danger" style="flex: 1.4; padding: 12px;" onclick="eksekusiResetTransaksi()">Ya, Reset Sekarang</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 0. Modal Grafik Pemasukan & Pengeluaran -->
+    <div id="modal-grafik" class="mf-modal-box">
+      <div class="mf-modal-header">
+        <h2 id="judul-modal-grafik">Grafik Pengeluaran</h2>
+        <button type="button" class="mf-btn-close" onclick="tutupModalLangsung()">✕</button>
+      </div>
+      <div class="mf-modal-body">
+        <div class="mf-seg-group">
+          <button type="button" id="tab-grafik-expense" class="mf-seg-btn active-expense" onclick="ubahTipeGrafik('expense')">Pengeluaran</button>
+          <button type="button" id="tab-grafik-income" class="mf-seg-btn" onclick="ubahTipeGrafik('income')">Pemasukan</button>
+        </div>
+
+        <div class="mf-seg-group" style="margin-top: 8px;">
+          <button type="button" id="period-grafik-month" class="mf-seg-btn active-neutral" onclick="ubahPeriodeGrafik('month')">Bulan Ini</button>
+          <button type="button" id="period-grafik-all" class="mf-seg-btn" onclick="ubahPeriodeGrafik('all')">Semua Waktu</button>
+        </div>
+
+        <div id="konten-grafik-area"></div>
+      </div>
+    </div>
+
+    <!-- 1. Modal Alokasi Gaji -->
+    <div id="modal-gaji" class="mf-modal-box">
+      <div class="mf-modal-header">
+        <h2>Alokasi Gaji</h2>
+        <button type="button" class="mf-btn-close" onclick="tutupModalLangsung()">✕</button>
+      </div>
+      <div class="mf-modal-body">
+        <label class="mf-label">Nominal Gaji Bulanan (Rp)</label>
+        <input type="number" id="input-gaji-nominal" class="mf-input" placeholder="Contoh: 5000000" oninput="simpanDanRenderGaji()">
+        
+        <div class="mf-row-between" style="margin-top: 14px;">
+          <span class="mf-label">Pos Pembagian</span>
+          <span id="total-persen-gaji" class="mf-badge">Total: 100%</span>
+        </div>
+        <div id="list-pos-gaji"></div>
+
+        <div class="mf-add-row">
+          <input type="text" id="new-pos-nama" class="mf-input" placeholder="Nama pos baru">
+          <input type="number" id="new-pos-persen" class="mf-input" placeholder="%" style="max-width: 75px;">
+          <button type="button" class="mf-btn-primary" onclick="tambahPosGaji()">+</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Modal Dana Darurat -->
+    <div id="modal-darurat" class="mf-modal-box">
+      <div class="mf-modal-header">
+        <h2>Dana Darurat</h2>
+        <button type="button" class="mf-btn-close" onclick="tutupModalLangsung()">✕</button>
+      </div>
+      <div class="mf-modal-body">
+        <label class="mf-label">Pengeluaran Wajib per Bulan (Rp)</label>
+        <input type="number" id="input-darurat-keluar" class="mf-input" placeholder="Contoh: 2500000" oninput="updateTargetDarurat()">
+
+        <label class="mf-label" style="margin-top: 12px;">Target Ketahanan</label>
+        <select id="select-darurat-kali" class="mf-input" onchange="updateTargetDarurat()">
+          <option value="3">3x Pengeluaran (Lajang / Awal)</option>
+          <option value="6" selected>6x Pengeluaran (Ideal)</option>
+          <option value="12">12x Pengeluaran (Berkeluarga)</option>
+        </select>
+
+        <div class="mf-stat-box">
+          <div class="mf-row-between">
+            <span>Terkumpul: <strong id="lbl-darurat-kumpul">Rp0</strong></span>
+            <span id="lbl-darurat-persen">0%</span>
+          </div>
+          <div class="mf-progress-bg">
+            <div id="bar-darurat" class="mf-progress-fill" style="width: 0%;"></div>
+          </div>
+          <small class="mf-muted">Target Ideal: <span id="lbl-darurat-target">Rp0</span></small>
+        </div>
+
+        <label class="mf-label">Update Saldo Dana Darurat (Rp)</label>
+        <div class="mf-add-row">
+          <input type="number" id="input-darurat-aksi" class="mf-input" placeholder="Nominal Rp">
+          <button type="button" class="mf-btn-primary" onclick="ubahSaldoDarurat(1)">+ Nabung</button>
+          <button type="button" class="mf-btn-danger" onclick="ubahSaldoDarurat(-1)">- Tarik</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Modal Target Tabungan -->
+    <div id="modal-tabungan" class="mf-modal-box">
+      <div class="mf-modal-header">
+        <h2>Target Tabungan</h2>
+        <button type="button" class="mf-btn-close" onclick="tutupModalLangsung()">✕</button>
+      </div>
+      <div class="mf-modal-body">
+        <div>
+          <input type="text" id="tab-nama" class="mf-input" placeholder="Nama tujuan (misal: Beli Laptop)">
+          <div class="mf-add-row" style="margin-top: 8px;">
+            <input type="number" id="tab-target" class="mf-input" placeholder="Target Rp">
+            <input type="number" id="tab-bulan" class="mf-input" placeholder="Bulan" style="max-width: 90px;">
+            <button type="button" class="mf-btn-primary" onclick="tambahTargetTabungan()">Tambah</button>
+          </div>
+        </div>
+        <div id="list-target-tabungan" style="margin-top: 14px;"></div>
+      </div>
+    </div>
+
+    <!-- 4. Modal Aset dan Cicilan -->
+    <div id="modal-aset" class="mf-modal-box">
+      <div class="mf-modal-header">
+        <h2>Aset & Cicilan</h2>
+        <button type="button" class="mf-btn-close" onclick="tutupModalLangsung()">✕</button>
+      </div>
+      <div class="mf-modal-body">
+        <div class="mf-stat-box">
+          <small class="mf-muted">Kekayaan Bersih (Total Aset - Utang)</small>
+          <h3 id="lbl-net-worth" style="margin: 4px 0; color: #38bdf8;">Rp0</h3>
+          <div class="mf-row-between" style="font-size: 12px;">
+            <span style="color: #4ade80;">Aset: <strong id="lbl-total-aset">Rp0</strong></span>
+            <span style="color: #f87171;">Utang: <strong id="lbl-total-utang">Rp0</strong></span>
+          </div>
+        </div>
+
+        <h4 class="mf-section-title">Daftar Aset</h4>
+        <div class="mf-add-row">
+          <input type="text" id="aset-nama" class="mf-input" placeholder="Nama aset (Rekening, Emas)">
+          <input type="number" id="aset-nilai" class="mf-input" placeholder="Nilai Rp">
+          <button type="button" class="mf-btn-primary" onclick="tambahAset()">+</button>
+        </div>
+        <div id="list-aset"></div>
+
+        <h4 class="mf-section-title" style="margin-top: 16px;">Daftar Cicilan / Utang</h4>
+        <div>
+          <input type="text" id="cicil-nama" class="mf-input" placeholder="Nama cicilan / tagihan">
+          <div class="mf-add-row" style="margin-top: 6px;">
+            <input type="number" id="cicil-sisa" class="mf-input" placeholder="Sisa utang Rp">
+            <input type="number" id="cicil-bulanan" class="mf-input" placeholder="Cicilan/bln">
+            <button type="button" class="mf-btn-primary" onclick="tambahCicilan()">+</button>
+          </div>
+        </div>
+        <div id="list-cicilan"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <style>
+    .bottom-nav .nav-item {
+      padding-left: 2px;
+      padding-right: 2px;
+      font-size: 10.5px;
+    }
+    .mf-clickable {
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .mf-clickable:active {
+      transform: scale(0.98);
+      border-color: #38bdf8;
+    }
+    .mf-stat-trigger {
+      position: relative;
+    }
+    .mf-chart-hint {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      font-size: 11px;
+      color: #94a3b8;
+      background: rgba(30, 41, 59, 0.85);
+      padding: 2px 7px;
+      border-radius: 6px;
+    }
+    .mf-tx-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 4px 0 10px 0;
+      padding: 0 2px;
+    }
+    .mf-link-danger {
+      background: rgba(220, 38, 38, 0.14);
+      border: 1px solid rgba(248, 113, 113, 0.3);
+      color: #f87171;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    .mf-link-neutral {
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: #38bdf8;
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    /* --- STYLING JADWAL & KALENDER MASUK / OFF / LEMBUR --- */
+    .mf-jadwal-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 7px;
+      margin-bottom: 12px;
+    }
+    .mf-jstat-card {
+      background: #17202e;
+      border: 1px solid #243044;
+      border-radius: 12px;
+      padding: 9px 6px;
+      text-align: center;
+    }
+    .mf-jstat-lbl {
+      display: block;
+      font-size: 10.5px;
+      color: #94a3b8;
+      margin-bottom: 3px;
+    }
+    .mf-jstat-card strong {
+      font-size: 16px;
+    }
+    .mf-jstat-card.j-masuk { border-color: rgba(34, 197, 94, 0.45); background: rgba(34, 197, 94, 0.1); }
+    .mf-jstat-card.j-masuk strong { color: #4ade80; }
+    .mf-jstat-card.j-off { border-color: rgba(239, 68, 68, 0.45); background: rgba(239, 68, 68, 0.1); }
+    .mf-jstat-card.j-off strong { color: #f87171; }
+    .mf-jstat-card.j-l3 { border-color: rgba(249, 115, 22, 0.5); background: rgba(249, 115, 22, 0.12); }
+    .mf-jstat-card.j-l3 strong { color: #fb923c; }
+    .mf-jstat-card.j-llain { border-color: rgba(168, 85, 247, 0.45); background: rgba(168, 85, 247, 0.12); }
+    .mf-jstat-card.j-llain strong { color: #c084fc; }
+
+    .mf-cal-card {
+      background: #141c28;
+      border: 1px solid #243044;
+      border-radius: 16px;
+      padding: 14px 10px;
+    }
+    .mf-cal-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 0 4px;
+    }
+    .mf-cal-nav strong {
+      font-size: 15px;
+      color: #f8fafc;
+    }
+    .mf-cal-arrow {
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #e2e8f0;
+      width: 34px;
+      height: 32px;
+      border-radius: 9px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .mf-legend-row {
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 6px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 9px;
+      padding: 7px 9px;
+      margin-bottom: 12px;
+      font-size: 10.5px;
+      color: #cbd5e1;
+    }
+    .mf-leg-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .dot-masuk, .dot-off, .dot-l1, .dot-l3, .dot-l12, .dot-lc {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+    }
+    .dot-masuk { background: #22c55e; }
+    .dot-off { background: #ef4444; }
+    .dot-l1 { background: #eab308; }
+    .dot-l3 { background: #f97316; }
+    .dot-l12 { background: #a855f7; }
+    .dot-lc { background: #06b6d4; }
+
+    .mf-cal-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .mf-cal-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+    .mf-cal-empty {
+      aspect-ratio: 1 / 1.1;
+    }
+    .mf-cal-day {
+      aspect-ratio: 1 / 1.1;
+      background: #192332;
+      border: 1px solid #263347;
+      border-radius: 10px;
+      color: #e2e8f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2px;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.1s ease;
+    }
+    .mf-cal-day:active {
+      transform: scale(0.93);
+    }
+    .mf-cal-day .day-num {
+      font-size: 13px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+    .mf-cal-day .day-tag {
+      font-size: 7.5px;
+      font-weight: 700;
+      margin-top: 2px;
+      letter-spacing: 0px;
+    }
+    .mf-cal-day.is-today {
+      box-shadow: inset 0 0 0 1.5px #38bdf8;
+    }
+
+    /* Warna Khusus Setiap Opsi Pada Tanggal */
+    .mf-cal-day.st-masuk {
+      background: rgba(34, 197, 94, 0.26);
+      border-color: #22c55e;
+      color: #4ade80;
+    }
+    .mf-cal-day.st-off {
+      background: rgba(239, 68, 68, 0.26);
+      border-color: #ef4444;
+      color: #f87171;
+    }
+    .mf-cal-day.st-lembur1 {
+      background: rgba(234, 179, 8, 0.28);
+      border-color: #eab308;
+      color: #fde047;
+    }
+    .mf-cal-day.st-lembur3 {
+      background: rgba(249, 115, 22, 0.30);
+      border-color: #f97316;
+      color: #fdba74;
+    }
+    .mf-cal-day.st-lembur12 {
+      background: rgba(168, 85, 247, 0.30);
+      border-color: #a855f7;
+      color: #d8b4fe;
+    }
+    .mf-cal-day.st-lemburc {
+      background: rgba(6, 182, 212, 0.28);
+      border-color: #06b6d4;
+      color: #67e8f9;
+    }
+
+    /* Tombol Opsi di Modal Pop-up Tanggal */
+    .mf-jopsi-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .mf-jopsi-btn {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      width: 100%;
+      padding: 11px 13px;
+      border-radius: 12px;
+      background: #17202e;
+      border: 1.5px solid #283548;
+      color: #f8fafc;
+      text-align: left;
+      cursor: pointer;
+    }
+    .mf-jopsi-dot {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .mf-jopsi-text {
+      flex: 1;
+    }
+    .mf-jopsi-text strong {
+      display: block;
+      font-size: 13.5px;
+    }
+    .mf-jopsi-text small {
+      color: #94a3b8;
+      font-size: 11px;
+    }
+    .mf-jopsi-tag {
+      font-size: 10.5px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .mf-jopsi-btn.opt-masuk.selected, .mf-jopsi-btn.opt-masuk:active {
+      background: rgba(34, 197, 94, 0.22);
+      border-color: #22c55e;
+    }
+    .mf-jopsi-btn.opt-masuk .mf-jopsi-tag { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+
+    .mf-jopsi-btn.opt-off.selected, .mf-jopsi-btn.opt-off:active {
+      background: rgba(239, 68, 68, 0.22);
+      border-color: #ef4444;
+    }
+    .mf-jopsi-btn.opt-off .mf-jopsi-tag { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+    .mf-jopsi-btn.opt-l1.selected, .mf-jopsi-btn.opt-l1:active {
+      background: rgba(234, 179, 8, 0.24);
+      border-color: #eab308;
+    }
+    .mf-jopsi-btn.opt-l1 .mf-jopsi-tag { background: rgba(234, 179, 8, 0.22); color: #fde047; }
+
+    .mf-jopsi-btn.opt-l3.selected, .mf-jopsi-btn.opt-l3:active {
+      background: rgba(249, 115, 22, 0.26);
+      border-color: #f97316;
+    }
+    .mf-jopsi-btn.opt-l3 .mf-jopsi-tag { background: rgba(249, 115, 22, 0.24); color: #fdba74; }
+
+    .mf-jopsi-btn.opt-l12.selected, .mf-jopsi-btn.opt-l12:active {
+      background: rgba(168, 85, 247, 0.26);
+      border-color: #a855f7;
+    }
+    .mf-jopsi-btn.opt-l12 .mf-jopsi-tag { background: rgba(168, 85, 247, 0.24); color: #d8b4fe; }
+
+    .mf-quick-jam-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .mf-chip-jam {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.45);
+      color: #67e8f9;
+      border-radius: 8px;
+      padding: 7px 4px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mf-chip-jam:active {
+      background: rgba(6, 182, 212, 0.3);
+    }
+
+    /* --- STYLING UMUM MODAL & RESET --- */
+    .mf-reset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .mf-btn-outline-danger {
+      background: rgba(220, 38, 38, 0.14);
+      border: 1px solid rgba(248, 113, 113, 0.4);
+      color: #f87171;
+      border-radius: 10px;
+      padding: 12px 10px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .mf-btn-outline-success {
+      background: rgba(22, 163, 74, 0.14);
+      border: 1px solid rgba(74, 222, 128, 0.4);
+      color: #4ade80;
+      border-radius: 10px;
+      padding: 12px 10px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .mf-full-btn {
+      width: 100%;
+      padding: 12px 14px;
+    }
+    .mf-btn-secondary {
+      background: #1e293b;
+      color: #e2e8f0;
+      border: 1px solid #334155;
+      border-radius: 10px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .mf-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(5, 9, 15, 0.82);
+      z-index: 9999;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .mf-overlay.active {
+      display: flex;
+    }
+    .mf-modal-box {
+      display: none;
+      width: 100%;
+      max-width: 480px;
+      max-height: 88vh;
+      background: #111827;
+      border-top: 1px solid #283548;
+      border-radius: 20px 20px 0 0;
+      padding: 20px;
+      overflow-y: auto;
+      color: #f8fafc;
+    }
+    .mf-modal-box.active {
+      display: block;
+    }
+    .mf-modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid #1f2937;
+    }
+    .mf-modal-header h2 {
+      margin: 0;
+      font-size: 18px;
+      color: #38bdf8;
+    }
+    .mf-btn-close {
+      background: #1f2937;
+      border: none;
+      color: #94a3b8;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .mf-seg-group {
+      display: flex;
+      gap: 6px;
+      background: #0f172a;
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid #1e293b;
+    }
+    .mf-seg-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      padding: 8px 10px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .mf-seg-btn.active-expense {
+      background: rgba(248, 113, 113, 0.2);
+      color: #f87171;
+    }
+    .mf-seg-btn.active-income {
+      background: rgba(74, 222, 128, 0.2);
+      color: #4ade80;
+    }
+    .mf-seg-btn.active-neutral {
+      background: #1e293b;
+      color: #38bdf8;
+    }
+    .mf-donut-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      margin: 14px 0;
+    }
+    .mf-trend-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      height: 90px;
+      padding-top: 12px;
+      border-bottom: 1px solid #243044;
+    }
+    .mf-trend-col {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+    }
+    .mf-trend-bar {
+      width: 100%;
+      max-width: 24px;
+      border-radius: 4px 4px 0 0;
+      min-height: 4px;
+      transition: height 0.25s ease;
+    }
+    .mf-trend-lbl {
+      font-size: 10px;
+      color: #94a3b8;
+      margin-top: 4px;
+    }
+    .mf-label {
+      display: block;
+      font-size: 12.5px;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    .mf-input {
+      width: 100%;
+      box-sizing: border-box;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #f8fafc;
+      padding: 10px 12px;
+      border-radius: 10px;
+      font-size: 14px;
+    }
+    .mf-add-row {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .mf-btn-primary {
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0 14px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mf-btn-danger {
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 0 12px;
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .mf-btn-danger:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+    .mf-stat-box {
+      background: #17202e;
+      border: 1px solid #243044;
+      border-radius: 12px;
+      padding: 14px;
+      margin: 14px 0;
+    }
+    .mf-progress-bg {
+      width: 100%;
+      height: 8px;
+      background: #0f172a;
+      border-radius: 99px;
+      margin: 8px 0;
+      overflow: hidden;
+    }
+    .mf-progress-fill {
+      height: 100%;
+      background: #38bdf8;
+      border-radius: 99px;
+      transition: width 0.25s ease;
+    }
+    .mf-row-between {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .mf-item-row {
+      background: #17202e;
+      border: 1px solid #243044;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-top: 8px;
+      font-size: 13.5px;
+    }
+    .mf-badge {
+      font-size: 12px;
+      padding: 2px 8px;
+      border-radius: 6px;
+      background: #1e293b;
+      color: #38bdf8;
+    }
+    .mf-section-title {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin: 12px 0 6px 0;
+    }
+    .mf-muted {
+      color: #94a3b8;
+      font-size: 12px;
+    }
+  </style>
+
+  <script src="./app.js"></script>
+  <script>
+    // --- FIX TOMBOL CLOSE DIALOG TRANSAKSI ---
+    function tutupTxDialog() {
+      const dlg = document.getElementById('txDialog');
+      if (!dlg) return;
+      if (typeof dlg.close === 'function') {
+        dlg.close();
+      } else {
+        dlg.removeAttribute('open');
+      }
+    }
+
+    function tutupDialogBackdrop(e) {
+      if (e.target && e.target.id === 'txDialog') {
+        tutupTxDialog();
+      }
+    }
+
+    // --- FITUR JADWAL TANGGAL MASUK, OFF & LEMBUR ---
+    // Skema PKS:
+    // - 1 HK = 9 jam
+    // - Lembur 1 jam = 1 jam (x1)
+    // - Lembur 2 s.d. 5 jam = dikali 2 (misal 3 jam -> 6 jam)
+    // - Lembur di atas 5 jam (> 5 jam) = dikali 3 (misal 6 jam -> 18 jam, 12 jam -> 36 jam)
+    const STORAGE_JADWAL_KEY = 'masfinance_jadwal_v1';
+    const JAM_PER_HK = 9;
+    const NAMA_BULAN_ID = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    const NAMA_HARI_ID = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+    let jadwalData = JSON.parse(localStorage.getItem(STORAGE_JADWAL_KEY)) || {};
+    let jadwalTahunAktif = new Date().getFullYear();
+    let jadwalBulanAktif = new Date().getMonth();
+    let tanggalDipilihKey = '';
+
+    function hitungJamTerhitung(jamRiil) {
+      const j = Number(jamRiil) || 0;
+      if (j <= 0) return 0;
+      if (j <= 1) return j;
+      if (j <= 5) return j * 2;
+      return j * 3;
+    }
+
+    function labelPengali(jamRiil) {
+      const j = Number(jamRiil) || 0;
+      if (j <= 1) return '×1';
+      if (j <= 5) return '×2';
+      return '×3';
+    }
+
+    function uraikanStatusJadwal(statusVal) {
+      if (!statusVal) return { jenis: '', jamRiil: 0, jamTerhitung: 0 };
+      if (statusVal === 'masuk') return { jenis: 'masuk', jamRiil: 0, jamTerhitung: 0 };
+      if (statusVal === 'off') return { jenis: 'off', jamRiil: 0, jamTerhitung: 0 };
+      if (statusVal === 'lembur1') return { jenis: 'lembur1', jamRiil: 1, jamTerhitung: hitungJamTerhitung(1) };
+      if (statusVal === 'lembur3') return { jenis: 'lembur3', jamRiil: 3, jamTerhitung: hitungJamTerhitung(3) };
+      if (statusVal === 'lembur12') return { jenis: 'lembur12', jamRiil: 12, jamTerhitung: hitungJamTerhitung(12) };
+      if (typeof statusVal === 'string' && statusVal.startsWith('lembur_')) {
+        const jam = parseFloat(statusVal.replace('lembur_', '')) || 0;
+        return { jenis: 'custom', jamRiil: jam, jamTerhitung: hitungJamTerhitung(jam) };
+      }
+      return { jenis: '', jamRiil: 0, jamTerhitung: 0 };
+    }
+
+    function simpanJadwal() {
+      localStorage.setItem(STORAGE_JADWAL_KEY, JSON.stringify(jadwalData));
+      renderKalenderJadwal();
+    }
+
+    function geserBulanJadwal(delta) {
+      jadwalBulanAktif += delta;
+      if (jadwalBulanAktif < 0) {
+        jadwalBulanAktif = 11;
+        jadwalTahunAktif -= 1;
+      } else if (jadwalBulanAktif > 11) {
+        jadwalBulanAktif = 0;
+        jadwalTahunAktif += 1;
+      }
+      renderKalenderJadwal();
+    }
+
+    function keBulanIniJadwal() {
+      const now = new Date();
+      jadwalTahunAktif = now.getFullYear();
+      jadwalBulanAktif = now.getMonth();
+      renderKalenderJadwal();
+    }
+
+    function formatAngka(num) {
+      return Number.isInteger(num) ? String(num) : num.toFixed(2).replace(/\.00$/, '');
+    }
+
+    function renderKalenderJadwal() {
+      const lblBulan = document.getElementById('j-bulan-label');
+      const grid = document.getElementById('j-calendar-grid');
+      if (!lblBulan || !grid) return;
+
+      lblBulan.textContent = `${NAMA_BULAN_ID[jadwalBulanAktif]} ${jadwalTahunAktif}`;
+
+      const firstDay = new Date(jadwalTahunAktif, jadwalBulanAktif, 1).getDay();
+      const offsetSenin = (firstDay + 6) % 7;
+      const jumlahHari = new Date(jadwalTahunAktif, jadwalBulanAktif + 1, 0).getDate();
+
+      const now = new Date();
+      const todayKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const prefixBulan = `${jadwalTahunAktif}-${String(jadwalBulanAktif + 1).padStart(2, '0')}`;
+
+      let cMasukNormal = 0;
+      let cOff = 0;
+      let cL3 = 0;
+      let cLLain = 0;
+      let totalJamRiil = 0;
+      let totalJamTerhitung = 0;
+      let html = '';
+
+      for (let e = 0; e < offsetSenin; e++) {
+        html += `<div class="mf-cal-empty"></div>`;
+      }
+
+      for (let d = 1; d <= jumlahHari; d++) {
+        const key = `${prefixBulan}-${String(d).padStart(2, '0')}`;
+        const rawStatus = jadwalData[key] || '';
+        const info = uraikanStatusJadwal(rawStatus);
+        let clsStatus = '';
+        let tagText = '';
+
+        if (info.jenis === 'masuk') {
+          clsStatus = 'st-masuk';
+          tagText = 'MASUK';
+          cMasukNormal++;
+        } else if (info.jenis === 'off') {
+          clsStatus = 'st-off';
+          tagText = 'OFF';
+          cOff++;
+        } else if (info.jenis === 'lembur1') {
+          clsStatus = 'st-lembur1';
+          tagText = '1J→1J';
+          cLLain++;
+        } else if (info.jenis === 'lembur3') {
+          clsStatus = 'st-lembur3';
+          tagText = '3J→6J';
+          cL3++;
+        } else if (info.jenis === 'lembur12') {
+          clsStatus = 'st-lembur12';
+          tagText = '12J→36J';
+          cLLain++;
+        } else if (info.jenis === 'custom' && info.jamRiil > 0) {
+          clsStatus = 'st-lemburc';
+          tagText = `${formatAngka(info.jamRiil)}J→${formatAngka(info.jamTerhitung)}J`;
+          cLLain++;
+        }
+
+        totalJamRiil += info.jamRiil;
+        totalJamTerhitung += info.jamTerhitung;
+
+        const clsToday = key === todayKey ? ' is-today' : '';
+        html += `
+          <button type="button" class="mf-cal-day ${clsStatus}${clsToday}" onclick="bukaOpsiTanggal('${key}', ${d})">
+            <span class="day-num">${d}</span>
+            <span class="day-tag">${tagText}</span>
+          </button>`;
+      }
+
+      grid.innerHTML = html;
+
+      const totalHariHadir = cMasukNormal + cL3 + cLLain;
+      const hkLembur = totalJamTerhitung / JAM_PER_HK;
+      const totalHkGabungan = totalHariHadir + hkLembur;
+
+      document.getElementById('j-count-hadir').textContent = totalHariHadir;
+      document.getElementById('j-count-off').textContent = cOff;
+      document.getElementById('j-count-l3').textContent = cL3;
+      document.getElementById('j-count-llain').textContent = cLLain;
+
+      document.getElementById('j-detail-hadir').textContent = `${totalHariHadir} hari (${totalHariHadir} HK)`;
+      document.getElementById('j-total-jam-riil').textContent = `${formatAngka(totalJamRiil)} jam`;
+      document.getElementById('j-total-jam-lembur').textContent = `${formatAngka(totalJamTerhitung)} jam`;
+      document.getElementById('j-setara-hk-lembur').textContent = `${formatAngka(hkLembur)} HK`;
+      document.getElementById('j-total-hk-gabungan').textContent = `${formatAngka(totalHkGabungan)} HK`;
+    }
+
+    function bukaOpsiTanggal(dateKey, dayNum) {
+      tanggalDipilihKey = dateKey;
+      const dObj = new Date(jadwalTahunAktif, jadwalBulanAktif, dayNum);
+      const namaHari = NAMA_HARI_ID[dObj.getDay()];
+      document.getElementById('j-modal-tanggal').textContent = `${namaHari}, ${dayNum} ${NAMA_BULAN_ID[jadwalBulanAktif]} ${jadwalTahunAktif}`;
+
+      const statusSaatIni = jadwalData[dateKey] || '';
+      const info = uraikanStatusJadwal(statusSaatIni);
+      let deskripsiStatus = 'Belum diatur (ketuk salah satu opsi di bawah)';
+      if (info.jenis === 'masuk') deskripsiStatus = 'Status: Masuk (1 HK / 9 jam)';
+      else if (info.jenis === 'off') deskripsiStatus = 'Status: Off (Libur)';
+      else if (info.jamRiil > 0) {
+        deskripsiStatus = `Status: Lembur ${formatAngka(info.jamRiil)} jam (${labelPengali(info.jamRiil)}) → ${formatAngka(info.jamTerhitung)} jam`;
+      }
+      document.getElementById('j-modal-status-sekarang').textContent = deskripsiStatus;
+
+      document.getElementById('opt-j-masuk').classList.toggle('selected', statusSaatIni === 'masuk');
+      document.getElementById('opt-j-off').classList.toggle('selected', statusSaatIni === 'off');
+      document.getElementById('opt-j-l1').classList.toggle('selected', statusSaatIni === 'lembur1');
+      document.getElementById('opt-j-l3').classList.toggle('selected', statusSaatIni === 'lembur3');
+      document.getElementById('opt-j-l12').classList.toggle('selected', statusSaatIni === 'lembur12');
+
+      const inputCustom = document.getElementById('input-jam-custom');
+      if (info.jenis === 'custom' && info.jamRiil > 0) {
+        inputCustom.value = info.jamRiil;
+      } else {
+        inputCustom.value = '';
+      }
+      updatePreviewCustomJam();
+
+      document.getElementById('btn-hapus-status-tgl').style.display = statusSaatIni ? 'block' : 'none';
+
+      document.getElementById('mf-modal-overlay').classList.add('active');
+      document.querySelectorAll('.mf-modal-box').forEach(el => el.classList.remove('active'));
+      document.getElementById('modal-jadwal-opsi').classList.add('active');
+    }
+
+    function updatePreviewCustomJam() {
+      const inp = document.getElementById('input-jam-custom');
+      const badge = document.getElementById('j-custom-preview');
+      if (!inp || !badge) return;
+      const val = parseFloat(inp.value);
+      if (!val || val <= 0) {
+        badge.textContent = '2 jam → 4 jam (×2)';
+        return;
+      }
+      const hasil = hitungJamTerhitung(val);
+      badge.textContent = `${formatAngka(val)} jam → ${formatAngka(hasil)} jam (${labelPengali(val)})`;
+    }
+
+    function pilihStatusCustomJam(jam) {
+      const j = Number(jam);
+      if (!j || j <= 0) return;
+      if (j === 1) return pilihStatusTanggal('lembur1');
+      if (j === 3) return pilihStatusTanggal('lembur3');
+      if (j === 12) return pilihStatusTanggal('lembur12');
+      pilihStatusTanggal(`lembur_${j}`);
+    }
+
+    function simpanCustomJamInput() {
+      const val = parseFloat(document.getElementById('input-jam-custom').value);
+      if (!val || val <= 0) return;
+      pilihStatusCustomJam(val);
+    }
+
+    function pilihStatusTanggal(statusBaru) {
+      if (!tanggalDipilihKey) return;
+      if (!statusBaru) {
+        delete jadwalData[tanggalDipilihKey];
+      } else {
+        jadwalData[tanggalDipilihKey] = statusBaru;
+      }
+      simpanJadwal();
+      tutupModalLangsung();
+    }
+
+    function resetJadwalBulanIni() {
+      const prefixBulan = `${jadwalTahunAktif}-${String(jadwalBulanAktif + 1).padStart(2, '0')}`;
+      const kunciBulan = Object.keys(jadwalData).filter(k => k.startsWith(prefixBulan));
+      if (kunciBulan.length === 0) return;
+      if (!confirm(`Hapus semua tanda Masuk/Off/Lembur pada bulan ${NAMA_BULAN_ID[jadwalBulanAktif]} ${jadwalTahunAktif}?`)) return;
+      kunciBulan.forEach(k => delete jadwalData[k]);
+      simpanJadwal();
+    }
+
+    // --- HELPER BACA TRANSAKSI DARI LOCALSTORAGE ---
+    function normalisasiTanggal(tglStr) {
+      if (!tglStr) return '';
+      if (/^\d{4}-\d{2}-\d{2}/.test(tglStr)) return tglStr.slice(0, 10);
+      const m = tglStr.match(/^(\d{2})\/(\d{2})\/(\d{4})/);
+      if (m) return `${m[3]}-${m[2]}-${m[1]}`;
+      return tglStr;
+    }
+
+    function isItemTransaksi(obj) {
+      return obj && typeof obj === 'object' && ('amount' in obj || 'nominal' in obj || 'nilai' in obj || 'type' in obj || 'jenis' in obj);
+    }
+
+    function ambilSemuaTransaksi() {
+      let hasil = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || key === 'masfinance_budget_v1' || key === 'masfinance_jadwal_v1') continue;
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          let list = null;
+          if (Array.isArray(parsed)) {
+            list = parsed;
+          } else if (parsed && typeof parsed === 'object') {
+            for (const val of Object.values(parsed)) {
+              if (Array.isArray(val) && val.length > 0 && isItemTransaksi(val[0])) {
+                list = val;
+                break;
+              }
+            }
+          }
+          if (list && list.length > 0 && isItemTransaksi(list[0])) {
+            hasil = list.map(item => ({
+              type: item.type || item.jenis || 'expense',
+              amount: Math.abs(Number(item.amount ?? item.nominal ?? item.nilai ?? 0)),
+              category: item.category || item.kategori || 'Lainnya',
+              date: normalisasiTanggal(item.date || item.tanggal || '')
+            }));
+            break;
+          }
+        } catch (err) {}
+      }
+      return hasil;
+    }
+
+    // --- FITUR RESET PENGELUARAN & PEMASUKAN ---
+    let resetTipeAktif = 'expense';
+    let resetPeriodeAktif = 'all';
+
+    function bukaModalReset(tipe) {
+      resetTipeAktif = tipe || 'expense';
+      resetPeriodeAktif = 'all';
+      document.getElementById('mf-modal-overlay').classList.add('active');
+      document.querySelectorAll('.mf-modal-box').forEach(el => el.classList.remove('active'));
+      document.getElementById('modal-reset').classList.add('active');
+      renderPratinjauReset();
+    }
+
+    function ubahTargetReset(tipe) {
+      resetTipeAktif = tipe;
+      renderPratinjauReset();
+    }
+
+    function ubahPeriodeReset(periode) {
+      resetPeriodeAktif = periode;
+      renderPratinjauReset();
+    }
+
+    function cocokKriteriaReset(item, bulanIni) {
+      const tipe = item.type || item.jenis || 'expense';
+      const tgl = normalisasiTanggal(item.date || item.tanggal || '');
+      const cocokTipe = resetTipeAktif === 'all' ? true : tipe === resetTipeAktif;
+      const cocokPeriode = resetPeriodeAktif === 'month' ? (tgl && tgl.startsWith(bulanIni)) : true;
+      return cocokTipe && cocokPeriode;
+    }
+
+    function renderPratinjauReset() {
+      document.getElementById('rst-type-expense').className = 'mf-seg-btn' + (resetTipeAktif === 'expense' ? ' active-expense' : '');
+      document.getElementById('rst-type-income').className = 'mf-seg-btn' + (resetTipeAktif === 'income' ? ' active-income' : '');
+      document.getElementById('rst-type-all').className = 'mf-seg-btn' + (resetTipeAktif === 'all' ? ' active-neutral' : '');
+
+      document.getElementById('rst-period-all').className = 'mf-seg-btn' + (resetPeriodeAktif === 'all' ? ' active-neutral' : '');
+      document.getElementById('rst-period-month').className = 'mf-seg-btn' + (resetPeriodeAktif === 'month' ? ' active-neutral' : '');
+
+      const now = new Date();
+      const bulanIni = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+      const kandidat = ambilSemuaTransaksi().filter(tx => cocokKriteriaReset(tx, bulanIni));
+      const totalNominal = kandidat.reduce((s, tx) => s + tx.amount, 0);
+
+      document.getElementById('rst-badge-count').textContent = `${kandidat.length} transaksi`;
+      document.getElementById('rst-total-amount').textContent = formatRp(totalNominal);
+
+      const btnExec = document.getElementById('btn-eksekusi-reset');
+      const warnText = document.getElementById('rst-warning-text');
+
+      if (kandidat.length === 0) {
+        btnExec.disabled = true;
+        warnText.textContent = 'Tidak ada data transaksi pada kategori dan rentang waktu yang dipilih.';
+      } else {
+        btnExec.disabled = false;
+        const namaJenis = resetTipeAktif === 'expense' ? 'pengeluaran' : (resetTipeAktif === 'income' ? 'pemasukan' : 'pemasukan & pengeluaran');
+        const namaWaktu = resetPeriodeAktif === 'month' ? 'bulan ini' : 'semua waktu';
+        warnText.textContent = `Sebanyak ${kandidat.length} catatan ${namaJenis} (${namaWaktu}) akan dihapus permanen. Data Jadwal & Budget tetap aman.`;
+      }
+    }
+
+    function eksekusiResetTransaksi() {
+      const now = new Date();
+      const bulanIni = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key || key === 'masfinance_budget_v1' || key === 'masfinance_jadwal_v1') continue;
+        try {
+          const parsed = JSON.parse(localStorage.getItem(key));
+          if (Array.isArray(parsed) && parsed.length > 0 && isItemTransaksi(parsed[0])) {
+            const sisa = parsed.filter(item => !cocokKriteriaReset(item, bulanIni));
+            localStorage.setItem(key, JSON.stringify(sisa));
+          } else if (parsed && typeof parsed === 'object') {
+            let berubah = false;
+            for (const [k, val] of Object.entries(parsed)) {
+              if (Array.isArray(val) && val.length > 0 && isItemTransaksi(val[0])) {
+                parsed[k] = val.filter(item => !cocokKriteriaReset(item, bulanIni));
+                berubah = true;
+              }
+            }
+            if (berubah) {
+              localStorage.setItem(key, JSON.stringify(parsed));
+            }
+          }
+        } catch (err) {}
+      }
+
+      const pesan = resetTipeAktif === 'expense'
+        ? 'Data pengeluaran berhasil direset'
+        : (resetTipeAktif === 'income' ? 'Data pemasukan berhasil direset' : 'Semua pemasukan & pengeluaran berhasil direset');
+      sessionStorage.setItem('mf_flash_toast', pesan);
+      location.reload();
+    }
+
+    // --- FITUR GRAFIK PEMASUKAN & PENGELUARAN ---
+    let grafikTipeAktif = 'expense';
+    let grafikPeriodeAktif = 'month';
+    const WARNA_GRAFIK = ['#38bdf8', '#4ade80', '#f87171', '#fbbf24', '#a78bfa', '#fb923c', '#2dd4bf', '#f472b6', '#94a3b8'];
+
+    function bukaGrafikTransaksi(tipe) {
+      grafikTipeAktif = tipe || 'expense';
+      document.getElementById('mf-modal-overlay').classList.add('active');
+      document.querySelectorAll('.mf-modal-box').forEach(el => el.classList.remove('active'));
+      document.getElementById('modal-grafik').classList.add('active');
+      renderGrafikTransaksi();
+    }
+
+    function ubahTipeGrafik(tipe) {
+      grafikTipeAktif = tipe;
+      renderGrafikTransaksi();
+    }
+
+    function ubahPeriodeGrafik(periode) {
+      grafikPeriodeAktif = periode;
+      renderGrafikTransaksi();
+    }
+
+    function bukaFormTransaksiDariGrafik() {
+      tutupModalLangsung();
+      const addBtn = document.getElementById('addBtn');
+      if (addBtn) addBtn.click();
+      const choice = document.querySelector(`.type-choice[data-type="${grafikTipeAktif}"]`);
+      if (choice) choice.click();
+    }
+
+    function renderGrafikTransaksi() {
+      const isExpense = grafikTipeAktif === 'expense';
+      const warnaUtama = isExpense ? '#f87171' : '#4ade80';
+      document.getElementById('judul-modal-grafik').textContent = isExpense ? 'Grafik Pengeluaran' : 'Grafik Pemasukan';
+      document.getElementById('judul-modal-grafik').style.color = warnaUtama;
+
+      const btnExp = document.getElementById('tab-grafik-expense');
+      const btnInc = document.getElementById('tab-grafik-income');
+      btnExp.className = 'mf-seg-btn' + (isExpense ? ' active-expense' : '');
+      btnInc.className = 'mf-seg-btn' + (!isExpense ? ' active-income' : '');
+
+      const btnMonth = document.getElementById('period-grafik-month');
+      const btnAll = document.getElementById('period-grafik-all');
+      btnMonth.className = 'mf-seg-btn' + (grafikPeriodeAktif === 'month' ? ' active-neutral' : '');
+      btnAll.className = 'mf-seg-btn' + (grafikPeriodeAktif === 'all' ? ' active-neutral' : '');
+
+      const now = new Date();
+      const bulanIni = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+
+      const semua = ambilSemuaTransaksi().filter(tx => {
+        if (tx.type !== grafikTipeAktif) return false;
+        if (grafikPeriodeAktif === 'month' && tx.date) {
+          return tx.date.startsWith(bulanIni);
+        }
+        return true;
+      });
+
+      const wadah = document.getElementById('konten-grafik-area');
+      if (semua.length === 0) {
+        wadah.innerHTML = `
+          <div class="mf-stat-box" style="text-align:center; padding: 24px 16px;">
+            <p class="mf-muted" style="margin: 0 0 12px 0;">Belum ada data ${isExpense ? 'pengeluaran' : 'pemasukan'} pada periode ini.</p>
+            <button type="button" class="mf-btn-primary" style="padding: 10px 16px;" onclick="bukaFormTransaksiDariGrafik()">＋ Tambah ${isExpense ? 'Pengeluaran' : 'Pemasukan'}</button>
+          </div>`;
+        return;
+      }
+
+      const totalNominal = semua.reduce((sum, tx) => sum + tx.amount, 0);
+      const perKategori = {};
+      const perTanggal = {};
+
+      semua.forEach(tx => {
+        perKategori[tx.category] = (perKategori[tx.category] || 0) + tx.amount;
+        const tglKey = tx.date ? (grafikPeriodeAktif === 'month' ? tx.date.slice(8, 10) : tx.date.slice(0, 7)) : '-';
+        perTanggal[tglKey] = (perTanggal[tglKey] || 0) + tx.amount;
+      });
+
+      const daftarKategori = Object.entries(perKategori)
+        .map(([nama, nilai]) => ({ nama, nilai }))
+        .sort((a, b) => b.nilai - a.nilai);
+
+      const radius = 54;
+      const keliling = 2 * Math.PI * radius;
+      let offsetAkumulasi = 0;
+      let svgSegmen = '';
+
+      daftarKategori.forEach((kat, i) => {
+        const porsi = kat.nilai / totalNominal;
+        const panjangDash = porsi * keliling;
+        const warna = WARNA_GRAFIK[i % WARNA_GRAFIK.length];
+        svgSegmen += `<circle cx="70" cy="70" r="${radius}" fill="transparent" stroke="${warna}" stroke-width="18" stroke-dasharray="${panjangDash} ${keliling}" stroke-dashoffset="${-offsetAkumulasi}" transform="rotate(-90 70 70)"></circle>`;
+        offsetAkumulasi += panjangDash;
+      });
+
+      const daftarTren = Object.entries(perTanggal).sort((a, b) => a[0].localeCompare(b[0])).slice(-7);
+      const maksTren = Math.max(...daftarTren.map(d => d[1]), 1);
+      const htmlTren = daftarTren.map(([lbl, val]) => {
+        const tinggiPersen = Math.max(8, Math.round((val / maksTren) * 100));
+        return `
+          <div class="mf-trend-col">
+            <div class="mf-trend-bar" style="height:${tinggiPersen}%; background:${warnaUtama};"></div>
+            <span class="mf-trend-lbl">${lbl}</span>
+          </div>`;
+      }).join('');
+
+      const htmlKategori = daftarKategori.map((kat, i) => {
+        const persen = Math.round((kat.nilai / totalNominal) * 100);
+        const warna = WARNA_GRAFIK[i % WARNA_GRAFIK.length];
+        return `
+          <div class="mf-item-row">
+            <div class="mf-row-between">
+              <span><span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${warna};margin-right:6px;"></span><strong>${kat.nama}</strong></span>
+              <span><strong>${formatRp(kat.nilai)}</strong> <span class="mf-muted">(${persen}%)</span></span>
+            </div>
+            <div class="mf-progress-bg" style="margin:6px 0 0 0; height:6px;">
+              <div class="mf-progress-fill" style="width:${persen}%; background:${warna};"></div>
+            </div>
+          </div>`;
+      }).join('');
+
+      wadah.innerHTML = `
+        <div class="mf-stat-box">
+          <div class="mf-row-between">
+            <span class="mf-muted">Total ${isExpense ? 'Pengeluaran' : 'Pemasukan'}</span>
+            <span class="mf-badge">${semua.length} transaksi</span>
+          </div>
+          <h3 style="margin: 4px 0 0 0; font-size: 20px; color: ${warnaUtama};">${formatRp(totalNominal)}</h3>
+
+          <div class="mf-donut-wrap">
+            <svg width="140" height="140" viewBox="0 0 140 140">
+              <circle cx="70" cy="70" r="${radius}" fill="transparent" stroke="#1e293b" stroke-width="18"></circle>
+              ${svgSegmen}
+              <text x="70" y="67" text-anchor="middle" fill="#94a3b8" font-size="10">Kategori</text>
+              <text x="70" y="83" text-anchor="middle" fill="#f8fafc" font-size="14" font-weight="bold">${daftarKategori.length}</text>
+            </svg>
+          </div>
+        </div>
+
+        <h4 class="mf-section-title">Tren ${grafikPeriodeAktif === 'month' ? 'Harian (Tanggal)' : 'Bulanan'}</h4>
+        <div class="mf-stat-box" style="margin-top: 6px;">
+          <div class="mf-trend-bars">${htmlTren}</div>
+        </div>
+
+        <h4 class="mf-section-title">Proporsi per Kategori</h4>
+        ${htmlKategori}
+
+        <button type="button" class="mf-btn-outline-danger mf-full-btn" style="margin-top: 14px;" onclick="bukaModalReset('${grafikTipeAktif}')">
+          ↺ Reset Data ${isExpense ? 'Pengeluaran' : 'Pemasukan'}
+        </button>
+      `;
+    }
+
+    // --- FITUR BUDGET & BACKUP ---
+    const STORAGE_BUDGET_KEY = 'masfinance_budget_v1';
+
+    let budgetData = JSON.parse(localStorage.getItem(STORAGE_BUDGET_KEY)) || {
+      gaji: {
+        nominal: 0,
+        pos: [
+          { id: 1, nama: 'Kebutuhan Pokok', persen: 50 },
+          { id: 2, nama: 'Keinginan & Hiburan', persen: 30 },
+          { id: 3, nama: 'Tabungan & Investasi', persen: 20 }
+        ]
+      },
+      darurat: { pengeluaran: 0, kali: 6, terkumpul: 0 },
+      tabungan: [],
+      aset: [],
+      cicilan: []
+    };
+
+    function simpanBudget() {
+      localStorage.setItem(STORAGE_BUDGET_KEY, JSON.stringify(budgetData));
+      updateRingkasanKartu();
+    }
+
+    function formatRp(angka) {
+      return 'Rp' + (Number(angka) || 0).toLocaleString('id-ID');
+    }
+
+    function bukaModalBudget(idModal) {
+      document.getElementById('mf-modal-overlay').classList.add('active');
+      document.querySelectorAll('.mf-modal-box').forEach(el => el.classList.remove('active'));
+      document.getElementById(idModal).classList.add('active');
+      renderSemuaFitur();
+    }
+
+    function tutupModalLangsung() {
+      document.getElementById('mf-modal-overlay').classList.remove('active');
+    }
+
+    function tutupSemuaModal(e) {
+      if (e.target.id === 'mf-modal-overlay') tutupModalLangsung();
+    }
+
+    // 1. ALOKASI GAJI
+    function simpanDanRenderGaji() {
+      budgetData.gaji.nominal = Number(document.getElementById('input-gaji-nominal').value) || 0;
+      simpanBudget();
+      renderGaji();
+    }
+
+    function renderGaji() {
+      document.getElementById('input-gaji-nominal').value = budgetData.gaji.nominal || '';
+      const wadah = document.getElementById('list-pos-gaji');
+      let totalPersen = 0;
+      wadah.innerHTML = '';
+
+      budgetData.gaji.pos.forEach((p, idx) => {
+        totalPersen += Number(p.persen);
+        const hasilRp = Math.round((budgetData.gaji.nominal * p.persen) / 100);
+        wadah.innerHTML += `
+          <div class="mf-item-row mf-row-between">
+            <div>
+              <strong>${p.nama}</strong> (${p.persen}%)<br>
+              <span style="color:#38bdf8; font-weight:600;">${formatRp(hasilRp)}</span>
+            </div>
+            <button type="button" class="mf-btn-danger" style="padding:4px 8px;" onclick="hapusPosGaji(${idx})">Hapus</button>
+          </div>`;
+      });
+
+      const badge = document.getElementById('total-persen-gaji');
+      badge.textContent = `Total: ${totalPersen}%`;
+      badge.style.color = totalPersen === 100 ? '#4ade80' : '#f87171';
+    }
+
+    function tambahPosGaji() {
+      const nama = document.getElementById('new-pos-nama').value.trim();
+      const persen = Number(document.getElementById('new-pos-persen').value);
+      if (!nama || persen <= 0) return;
+      budgetData.gaji.pos.push({ id: Date.now(), nama, persen });
+      document.getElementById('new-pos-nama').value = '';
+      document.getElementById('new-pos-persen').value = '';
+      simpanBudget();
+      renderGaji();
+    }
+
+    function hapusPosGaji(idx) {
+      budgetData.gaji.pos.splice(idx, 1);
+      simpanBudget();
+      renderGaji();
+    }
+
+    // 2. DANA DARURAT
+    function updateTargetDarurat() {
+      budgetData.darurat.pengeluaran = Number(document.getElementById('input-darurat-keluar').value) || 0;
+      budgetData.darurat.kali = Number(document.getElementById('select-darurat-kali').value) || 6;
+      simpanBudget();
+      renderDarurat();
+    }
+
+    function ubahSaldoDarurat(arah) {
+      const nominal = Number(document.getElementById('input-darurat-aksi').value) || 0;
+      if (nominal <= 0) return;
+      budgetData.darurat.terkumpul = Math.max(0, budgetData.darurat.terkumpul + (nominal * arah));
+      document.getElementById('input-darurat-aksi').value = '';
+      simpanBudget();
+      renderDarurat();
+    }
+
+    function renderDarurat() {
+      const d = budgetData.darurat;
+      document.getElementById('input-darurat-keluar').value = d.pengeluaran || '';
+      document.getElementById('select-darurat-kali').value = d.kali;
+      const target = d.pengeluaran * d.kali;
+      const persen = target > 0 ? Math.min(100, Math.round((d.terkumpul / target) * 100)) : 0;
+
+      document.getElementById('lbl-darurat-kumpul').textContent = formatRp(d.terkumpul);
+      document.getElementById('lbl-darurat-target').textContent = formatRp(target);
+      document.getElementById('lbl-darurat-persen').textContent = persen + '%';
+      document.getElementById('bar-darurat').style.width = persen + '%';
+    }
+
+    // 3. TARGET TABUNGAN
+    function tambahTargetTabungan() {
+      const nama = document.getElementById('tab-nama').value.trim();
+      const target = Number(document.getElementById('tab-target').value);
+      const bulan = Number(document.getElementById('tab-bulan').value) || 1;
+      if (!nama || target <= 0) return;
+
+      budgetData.tabungan.push({ id: Date.now(), nama, target, terkumpul: 0, bulan });
+      document.getElementById('tab-nama').value = '';
+      document.getElementById('tab-target').value = '';
+      document.getElementById('tab-bulan').value = '';
+      simpanBudget();
+      renderTabungan();
+    }
+
+    function setorTabungan(idx) {
+      const input = document.getElementById(`setor-tab-${idx}`);
+      const nominal = Number(input.value) || 0;
+      if (nominal <= 0) return;
+      budgetData.tabungan[idx].terkumpul += nominal;
+      input.value = '';
+      simpanBudget();
+      renderTabungan();
+    }
+
+    function hapusTabungan(idx) {
+      budgetData.tabungan.splice(idx, 1);
+      simpanBudget();
+      renderTabungan();
+    }
+
+    function renderTabungan() {
+      const wadah = document.getElementById('list-target-tabungan');
+      wadah.innerHTML = '';
+      budgetData.tabungan.forEach((t, idx) => {
+        const persen = Math.min(100, Math.round((t.terkumpul / t.target) * 100));
+        const sisa = Math.max(0, t.target - t.terkumpul);
+        const perBulan = Math.ceil(sisa / t.bulan);
+
+        wadah.innerHTML += `
+          <div class="mf-item-row">
+            <div class="mf-row-between">
+              <strong>${t.nama}</strong>
+              <button type="button" class="mf-btn-danger" style="padding:2px 8px; font-size:11px;" onclick="hapusTabungan(${idx})">Hapus</button>
+            </div>
+            <div class="mf-progress-bg"><div class="mf-progress-fill" style="width:${persen}%"></div></div>
+            <div class="mf-row-between mf-muted">
+              <span>${formatRp(t.terkumpul)} / ${formatRp(t.target)} (${persen}%)</span>
+              <span>~${formatRp(perBulan)}/bln</span>
+            </div>
+            <div class="mf-add-row" style="margin-top:8px;">
+              <input type="number" id="setor-tab-${idx}" class="mf-input" placeholder="Setor Rp" style="padding:6px 10px;">
+              <button type="button" class="mf-btn-primary" onclick="setorTabungan(${idx})">+ Setor</button>
+            </div>
+          </div>`;
+      });
+    }
+
+    // 4. ASET DAN CICILAN
+    function tambahAset() {
+      const nama = document.getElementById('aset-nama').value.trim();
+      const nilai = Number(document.getElementById('aset-nilai').value);
+      if (!nama || nilai <= 0) return;
+      budgetData.aset.push({ nama, nilai });
+      document.getElementById('aset-nama').value = '';
+      document.getElementById('aset-nilai').value = '';
+      simpanBudget();
+      renderAsetCicilan();
+    }
+
+    function hapusAset(idx) {
+      budgetData.aset.splice(idx, 1);
+      simpanBudget();
+      renderAsetCicilan();
+    }
+
+    function tambahCicilan() {
+      const nama = document.getElementById('cicil-nama').value.trim();
+      const sisa = Number(document.getElementById('cicil-sisa').value);
+      const bulanan = Number(document.getElementById('cicil-bulanan').value) || 0;
+      if (!nama || sisa <= 0) return;
+      budgetData.cicilan.push({ nama, sisa, bulanan });
+      document.getElementById('cicil-nama').value = '';
+      document.getElementById('cicil-sisa').value = '';
+      document.getElementById('cicil-bulanan').value = '';
+      simpanBudget();
+      renderAsetCicilan();
+    }
+
+    function bayarCicilan(idx) {
+      const item = budgetData.cicilan[idx];
+      const potong = item.bulanan > 0 ? item.bulanan : item.sisa;
+      item.sisa = Math.max(0, item.sisa - potong);
+      if (item.sisa === 0) budgetData.cicilan.splice(idx, 1);
+      simpanBudget();
+      renderAsetCicilan();
+    }
+
+    function renderAsetCicilan() {
+      let totalAset = 0;
+      let totalUtang = 0;
+
+      const listAset = document.getElementById('list-aset');
+      listAset.innerHTML = '';
+      budgetData.aset.forEach((a, idx) => {
+        totalAset += a.nilai;
+        listAset.innerHTML += `
+          <div class="mf-item-row mf-row-between">
+            <span>${a.nama}: <strong style="color:#4ade80;">${formatRp(a.nilai)}</strong></span>
+            <button type="button" class="mf-btn-danger" style="padding:3px 8px;" onclick="hapusAset(${idx})">✕</button>
+          </div>`;
+      });
+
+      const listCicil = document.getElementById('list-cicilan');
+      listCicil.innerHTML = '';
+      budgetData.cicilan.forEach((c, idx) => {
+        totalUtang += c.sisa;
+        listCicil.innerHTML += `
+          <div class="mf-item-row mf-row-between">
+            <div>
+              <strong>${c.nama}</strong><br>
+              <span class="mf-muted">Sisa: <span style="color:#f87171;">${formatRp(c.sisa)}</span> (${formatRp(c.bulanan)}/bln)</span>
+            </div>
+            <button type="button" class="mf-btn-primary" style="padding:6px 10px;" onclick="bayarCicilan(${idx})">Bayar 1x</button>
+          </div>`;
+      });
+
+      document.getElementById('lbl-total-aset').textContent = formatRp(totalAset);
+      document.getElementById('lbl-total-utang').textContent = formatRp(totalUtang);
+      document.getElementById('lbl-net-worth').textContent = formatRp(totalAset - totalUtang);
+    }
+
+    function updateRingkasanKartu() {
+      if (budgetData.gaji.nominal > 0) {
+        document.getElementById('sub-gaji').textContent = `Gaji aktif: ${formatRp(budgetData.gaji.nominal)} (${budgetData.gaji.pos.length} pos)`;
+      }
+      const targetDarurat = budgetData.darurat.pengeluaran * budgetData.darurat.kali;
+      if (targetDarurat > 0) {
+        const p = Math.min(100, Math.round((budgetData.darurat.terkumpul / targetDarurat) * 100));
+        document.getElementById('sub-darurat').textContent = `Terkumpul ${formatRp(budgetData.darurat.terkumpul)} (${p}% dari target)`;
+      }
+      if (budgetData.tabungan.length > 0) {
+        document.getElementById('sub-tabungan').textContent = `${budgetData.tabungan.length} target tabungan aktif berjalan.`;
+      }
+      const totAset = budgetData.aset.reduce((s, a) => s + a.nilai, 0);
+      const totUtang = budgetData.cicilan.reduce((s, c) => s + c.sisa, 0);
+      if (totAset > 0 || totUtang > 0) {
+        document.getElementById('sub-aset').textContent = `Kekayaan bersih: ${formatRp(totAset - totUtang)}`;
+      }
+    }
+
+    function renderSemuaFitur() {
+      renderGaji();
+      renderDarurat();
+      renderTabungan();
+      renderAsetCicilan();
+    }
+
+    // BACKUP & RESTORE LENGKAP
+    async function backupSemuaDataApp() {
+      const semuaData = {};
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        semuaData[key] = localStorage.getItem(key);
+      }
+
+      const isiJson = JSON.stringify(semuaData, null, 2);
+      const namaFile = `MasFinance-FullBackup-${new Date().toISOString().slice(0, 10)}.json`;
+      const blob = new Blob([isiJson], { type: 'application/json' });
+      const file = new File([blob], namaFile, { type: 'application/json' });
+
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title: 'Backup Mas Finance' });
+          return;
+        } catch (err) {}
+      }
+
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = namaFile;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function restoreSemuaDataApp(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const hasil = JSON.parse(e.target.result);
+          Object.keys(hasil).forEach(key => {
+            localStorage.setItem(key, hasil[key]);
+          });
+          alert('Seluruh data berhasil dipulihkan! Aplikasi akan dimuat ulang.');
+          location.reload();
+        } catch (err) {
+          alert('Format file JSON tidak valid.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    document.querySelectorAll('[data-open="goals"]').forEach(btn => {
+      btn.addEventListener('click', () => bukaModalBudget('modal-tabungan'));
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateRingkasanKartu();
+      renderKalenderJadwal();
+      const flashMsg = sessionStorage.getItem('mf_flash_toast');
+      if (flashMsg) {
+        sessionStorage.removeItem('mf_flash_toast');
+        const toastEl = document.getElementById('toast');
+        if (toastEl) {
+          toastEl.textContent = flashMsg;
+          toastEl.classList.add('show');
+          setTimeout(() => toastEl.classList.remove('show'), 3000);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
